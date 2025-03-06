@@ -1,12 +1,24 @@
 #include <iostream>
 #include <map>
-#include <unordered_map>
+#include <string>
+#include <vector>
 
 using namespace std;
+
+// cmd + / to comment out on mass
 
 
 int main(int argc, char *argv[]) {              //read cmd args w main params.
     int i = 0;
+    double Lx = 20;
+    double Ly = 20;
+    double Lz = 20;
+    double dt = 0.001;
+    bool testCase = false;
+    bool timeProvided = false;
+    bool nProvided = false;
+    bool icRandomChosen = false;
+    
 
     map<string, map<string, vector<double> > > testCaseDict;
     testCaseDict["-ic-one"] = {
@@ -85,10 +97,25 @@ int main(int argc, char *argv[]) {              //read cmd args w main params.
     while (i < argc) {  //argc num args provided
         cout << "Argument " << i + 1 << ": " << argv[i]
              << endl;
-        string key(argv[i]);
 
-
-        if (testCaseDict.find(key) != testCaseDict.end()) {
+        if (string(argv[i]) == "-Lx") {
+            cout << "hey " << endl;
+            Lx = stod(argv[i+1]);
+            cout << argv[i+1] << endl;
+        } else if (string(argv[i]) == "-Ly") {
+            Ly = stod(argv[i+1]);
+        } else if (string(argv[i]) == "-Lz") {
+            Lz = stod(argv[i+1]);
+        } else if (string(argv[i]) == "-T") {
+            time = stod(argv[i+1]);
+            timeProvided = true;
+        } else if (string(argv[i]) == "-N") {
+            numParticles = stod(argv[i+1]);
+            nProvided = true;
+        } else if (string(argv[i]) == "-ic-random") {
+            icRandomChosen = true;
+        } else if (testCaseDict.find(argv[i]) != testCaseDict.end()) {
+            string key(argv[i]);
             time = testCaseDict[key]["time"][0];
             numParticles = testCaseDict[key]["numParticles"][0];
             x = testCaseDict[key]["x"];
@@ -98,22 +125,41 @@ int main(int argc, char *argv[]) {              //read cmd args w main params.
             v = testCaseDict[key]["v"];
             w = testCaseDict[key]["w"];
             type = testCaseDict[key]["type"];
+            testCase = true;
         }
-    
+
         i++;
     }
 
+    if ((testCase == true) || (icRandomChosen == true && nProvided == true && timeProvided == true)) {
+        cout << "Command Line input well-formatted, carrying on... " << endl;
+    } else {
+        cout << "Command line input formatted incorrectly, exiting program." << endl;
+        exit(1);
+    }
+
+    
+
     cout << time << endl;
-    cout << numParticles << endl;
-    cout << x[0] << endl;
-    cout << y[0] << endl;
-    cout << z[0] << endl;
-    cout << u[0] << endl;
-    cout << v[0] << endl;
-    cout << w[0] << endl;
-    cout << type[0] << endl;
+
+    if (testCase == true) {
+        cout << numParticles << endl;
+        cout << x[0] << endl;
+        cout << y[0] << endl;
+        cout << z[0] << endl;
+        cout << u[0] << endl;
+        cout << v[0] << endl;
+        cout << w[0] << endl;
+        cout << type[0] << endl;
+    }
+    cout << Lx << endl;
+    cout << Ly << endl;
+    cout << Lz << endl;
+
+
+
+
 
     return 0;
-  
 
 }
