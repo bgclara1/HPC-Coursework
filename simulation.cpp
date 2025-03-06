@@ -145,7 +145,7 @@ int main(int argc, char *argv[]) {              //read cmd args w main params.
             cout << "--percent-type1 arg (=10)" << "         " << "Percentage of type 1 particles with random IC" << endl;
             cout << "--N arg" << "                           " << "Number of particles to spawn with random IC" << endl;
             cout << "--temp arg" << "                        " << "Temperature (degrees Kelvin)" << endl;
-
+            exit(1);
         }
 
         i++;
@@ -162,27 +162,32 @@ int main(int argc, char *argv[]) {              //read cmd args w main params.
         exit(1);
     }
 
+    // cout << time << endl;
+
+    // if (testCase == true) {
+    //     cout << numParticles << endl;
+    //     cout << x[0] << endl;
+    //     cout << y[0] << endl;
+    //     cout << z[0] << endl;
+    //     cout << u[0] << endl;
+    //     cout << v[0] << endl;
+    //     cout << w[0] << endl;
+    //     cout << type[0] << endl;
+    // }
+    // cout << Lx << endl;
+    // cout << Ly << endl;
+    // cout << Lz << endl;
+
+
+    ////////////////// SIM ALGO /////////////////////////
+
+
+    double steps = (time / dt) + 1;
+    vector<double> timestamps;
     
-
-    cout << time << endl;
-
-    if (testCase == true) {
-        cout << numParticles << endl;
-        cout << x[0] << endl;
-        cout << y[0] << endl;
-        cout << z[0] << endl;
-        cout << u[0] << endl;
-        cout << v[0] << endl;
-        cout << w[0] << endl;
-        cout << type[0] << endl;
+    for (int i = 0; i < steps; i++) {
+        timestamps.push_back(i * dt);
     }
-    cout << Lx << endl;
-    cout << Ly << endl;
-    cout << Lz << endl;
-
-
-
-
 
     return 0;
 
