@@ -6,6 +6,8 @@
 using namespace std;
 
 // cmd + / to comment out on mass
+// g++ simulation.cpp -std=c++11 -o simulation
+
 
 
 int main(int argc, char *argv[]) {              //read cmd args w main params.
@@ -114,7 +116,7 @@ int main(int argc, char *argv[]) {              //read cmd args w main params.
             nProvided = true;
         } else if (string(argv[i]) == "-ic-random") {
             icRandomChosen = true;
-        } else if (testCaseDict.find(argv[i]) != testCaseDict.end()) {
+        } else if (testCaseDict.find(string(argv[i])) != testCaseDict.end()) {
             string key(argv[i]);
             time = testCaseDict[key]["time"][0];
             numParticles = testCaseDict[key]["numParticles"][0];
@@ -126,7 +128,7 @@ int main(int argc, char *argv[]) {              //read cmd args w main params.
             w = testCaseDict[key]["w"];
             type = testCaseDict[key]["type"];
             testCase = true;
-        }
+        } 
 
         i++;
     }
@@ -134,6 +136,10 @@ int main(int argc, char *argv[]) {              //read cmd args w main params.
     if ((testCase == true) || (icRandomChosen == true && nProvided == true && timeProvided == true)) {
         cout << "Command Line input well-formatted, carrying on... " << endl;
     } else {
+        cout << testCase << endl;
+        cout << icRandomChosen << endl;
+        cout << nProvided << endl;
+        cout << timeProvided << endl;
         cout << "Command line input formatted incorrectly, exiting program." << endl;
         exit(1);
     }
