@@ -89,6 +89,17 @@ int main(int argc, char *argv[]) {              //read cmd args w main params.
         {"w", {0.0, 0.0}},
         {"type", {1, 1}}
     };
+    testCaseDict["--Claras-test-case"] = {
+        {"time", {50.0}},
+        {"numParticles", {3}},
+        {"x", {8.5, 11.5, 10}},
+        {"y", {11.3, 8.7,20}},
+        {"z", {10.0, 10.0,13}},
+        {"u", {0.5, -0.5,-0.5}},
+        {"v", {0.0, 0.0,0}},
+        {"w", {0.0, 0.0,0}},
+        {"type", {1, 1,0}}
+    };
     
 
     double time;
@@ -233,7 +244,13 @@ int main(int argc, char *argv[]) {              //read cmd args w main params.
         }
     };
 
-
+    cout << "Force matrix F:" << endl;
+    for (int i = 0; i < numParticles; i++) {
+        for (int j = 0; j < numParticles; j++) {
+            cout << F[i][j] << "\t";
+        }
+        cout << endl;
+    }
 
 
 
