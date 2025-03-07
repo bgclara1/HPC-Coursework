@@ -189,6 +189,62 @@ int main(int argc, char *argv[]) {              //read cmd args w main params.
         timestamps.push_back(i * dt);
     }
 
+    int epsilon[2][2] = {
+        {3,15},
+        {15,60}
+    };
+
+    int sigma[2][2] = {
+        {1,2},
+        {2,3}
+    };
+
+    vector<vector<double>> xij(numParticles, vector<double>(numParticles, 0.0)); // initialise w zeros
+    vector<vector<double>> yij(numParticles, vector<double>(numParticles, 0.0));
+    vector<vector<double>> zij(numParticles, vector<double>(numParticles, 0.0));
+    vector<vector<double>> rij(numParticles, vector<double>(numParticles, 0.0));
+    vector<vector<double>> dPhi_dx(numParticles, vector<double>(numParticles, 0.0));
+    vector<vector<double>> dPhi_dy(numParticles, vector<double>(numParticles, 0.0));
+    vector<vector<double>> dPhi_dz(numParticles, vector<double>(numParticles, 0.0));
+    vector<vector<double>> F(numParticles, vector<double>(numParticles, 0.0));
+
+
+    for (int i = 0; i < numParticles - 1; i++) {            // only calculating upper triangle (no diag ) avoids double counting
+        for (int j = i + 1; j < numParticles; j++) {
+            xij[i][j] = x[i] - x[j];
+            yij[i][j] = y[i] - y[j];
+            zij[i][j] = z[i] - z[j];
+            rij[i][j] = sqrt(xij[i][j]*xij[i][j] + yij[i][j]*yij[i][j] + zij[i][j]*zij[i][j]);
+        }
+    }
+
+    int e, s;
+    for (int i = 0; i < sizeof(xij) ; i++) { 
+        for (int j = i + 1; j < numParticles; j++) {
+            int t1 = type[i];
+            int t2 = type[j];
+            e = epsilon[t1][t2];
+            s = sigma[t1][t2];
+            dPhi_dx[i][j] = -24 * e * xij[i][j]*((2*pow(s,12)/pow(rij[i][j],14))   -   (pow(s,6)/pow(rij[i][j],8))) ;
+            dPhi_dy[i][j] = -24 * e * yij[i][j]*((2*pow(s,12)/pow(rij[i][j],14))   -   (pow(s,6)/pow(rij[i][j],8))) ;
+            dPhi_dz[i][j] = -24 * e * zij[i][j]*((2*pow(s,12)/pow(rij[i][j],14))   -   (pow(s,6)/pow(rij[i][j],8))) ;
+            F[i][j] = -(dPhi_dx[i][j]+dPhi_dy[i][j]+dPhi_dz[i][j]);
+        
+        }
+    };
+
+
+
+
+
     return 0;
 
 }
+
+
+
+
+
+
+
+
