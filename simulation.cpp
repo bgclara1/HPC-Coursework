@@ -2,13 +2,13 @@
 #include <map>
 #include <string>
 #include <vector>
-
+#include <cmath>
+#include <cstdlib>
+#include <fstream> 
 using namespace std;
 
 // cmd + / to comment out on mass
 // g++ simulation.cpp -std=c++11 -o simulation
-
-
 
 int main(int argc, char *argv[]) {              //read cmd args w main params.
     int i = 0;
@@ -21,7 +21,6 @@ int main(int argc, char *argv[]) {              //read cmd args w main params.
     bool nProvided = false;
     bool icRandomChosen = false;
     
-
     map<string, map<string, vector<double> > > testCaseDict;
     testCaseDict["--ic-one"] = {
         {"time", {1.0}},
@@ -101,16 +100,14 @@ int main(int argc, char *argv[]) {              //read cmd args w main params.
         {"type", {1, 1,0}}
     };
     
-
     double time;
     int numParticles;
     vector<double> x, y, z, u, v, w, type;
-
+    
     // test reading in args properly
     while (i < argc) {  //argc num args provided
-        cout << "Argument " << i + 1 << ": " << argv[i]
-             << endl;
-
+        cout << "Argument " << i + 1 << ": " << argv[i] << endl;
+    
         if (string(argv[i]) == "--Lx") {
             cout << "hey " << endl;
             Lx = stod(argv[i+1]);
@@ -158,10 +155,10 @@ int main(int argc, char *argv[]) {              //read cmd args w main params.
             cout << "--temp arg" << "                        " << "Temperature (degrees Kelvin)" << endl;
             exit(1);
         }
-
+    
         i++;
     }
-
+    
     if ((testCase == true) || (icRandomChosen == true && nProvided == true && timeProvided == true)) {
         cout << "Command Line input well-formatted, carrying on... " << endl;
     } else {
@@ -172,44 +169,27 @@ int main(int argc, char *argv[]) {              //read cmd args w main params.
         cout << "Command line input formatted incorrectly, exiting program." << endl;
         exit(1);
     }
-
-    // cout << time << endl;
-
-    // if (testCase == true) {
-    //     cout << numParticles << endl;
-    //     cout << x[0] << endl;
-    //     cout << y[0] << endl;
-    //     cout << z[0] << endl;
-    //     cout << u[0] << endl;
-    //     cout << v[0] << endl;
-    //     cout << w[0] << endl;
-    //     cout << type[0] << endl;
-    // }
-    // cout << Lx << endl;
-    // cout << Ly << endl;
-    // cout << Lz << endl;
-
-
+    
+    // GENERATE TYPE IF NOT --IC-...
+    
     ////////////////// SIM ALGO /////////////////////////
-
-
+    
     double steps = (time / dt) + 1;
     vector<double> timestamps;
-    
     for (int i = 0; i < steps; i++) {
         timestamps.push_back(i * dt);
     }
-
+    
     int epsilon[2][2] = {
         {3,15},
         {15,60}
     };
-
+    
     int sigma[2][2] = {
         {1,2},
         {2,3}
     };
-
+    
     vector<vector<double>> xij(numParticles, vector<double>(numParticles, 0.0)); // initialise w zeros
     vector<vector<double>> yij(numParticles, vector<double>(numParticles, 0.0));
     vector<vector<double>> zij(numParticles, vector<double>(numParticles, 0.0));
@@ -218,32 +198,23 @@ int main(int argc, char *argv[]) {              //read cmd args w main params.
     vector<vector<double>> dPhi_dy(numParticles, vector<double>(numParticles, 0.0));
     vector<vector<double>> dPhi_dz(numParticles, vector<double>(numParticles, 0.0));
     vector<vector<double>> F(numParticles, vector<double>(numParticles, 0.0));
-
-
+    
     for (int i = 0; i < numParticles - 1; i++) {            // only calculating upper triangle (no diag ) avoids double counting
         for (int j = i + 1; j < numParticles; j++) {
             xij[i][j] = x[i] - x[j];
             yij[i][j] = y[i] - y[j];
             zij[i][j] = z[i] - z[j];
             rij[i][j] = sqrt(xij[i][j]*xij[i][j] + yij[i][j]*yij[i][j] + zij[i][j]*zij[i][j]);
-        }
-    }
-
-    int e, s;
-    for (int i = 0; i < sizeof(xij) ; i++) { 
-        for (int j = i + 1; j < numParticles; j++) {
             int t1 = type[i];
             int t2 = type[j];
-            e = epsilon[t1][t2];
-            s = sigma[t1][t2];
-            dPhi_dx[i][j] = -24 * e * xij[i][j]*((2*pow(s,12)/pow(rij[i][j],14))   -   (pow(s,6)/pow(rij[i][j],8))) ;
-            dPhi_dy[i][j] = -24 * e * yij[i][j]*((2*pow(s,12)/pow(rij[i][j],14))   -   (pow(s,6)/pow(rij[i][j],8))) ;
-            dPhi_dz[i][j] = -24 * e * zij[i][j]*((2*pow(s,12)/pow(rij[i][j],14))   -   (pow(s,6)/pow(rij[i][j],8))) ;
-            F[i][j] = -(dPhi_dx[i][j]+dPhi_dy[i][j]+dPhi_dz[i][j]);
-        
+            int e = epsilon[t1][t2];
+            int s = sigma[t1][t2];
+            dPhi_dx[i][j] = -24 * e * xij[i][j]*((2*pow(s,12)/pow(rij[i][j],14)) - (pow(s,6)/pow(rij[i][j],8)));
+            dPhi_dy[i][j] = -24 * e * yij[i][j]*((2*pow(s,12)/pow(rij[i][j],14)) - (pow(s,6)/pow(rij[i][j],8)));
+            dPhi_dz[i][j] = -24 * e * zij[i][j]*((2*pow(s,12)/pow(rij[i][j],14)) - (pow(s,6)/pow(rij[i][j],8)));
         }
-    };
-
+    }
+    
     cout << "Force matrix F:" << endl;
     for (int i = 0; i < numParticles; i++) {
         for (int j = 0; j < numParticles; j++) {
@@ -251,17 +222,65 @@ int main(int argc, char *argv[]) {              //read cmd args w main params.
         }
         cout << endl;
     }
-
-
-
+    
+    vector<double> Fx(numParticles, 0.0), Fy(numParticles, 0.0), Fz(numParticles, 0.0);
+    for (int i = 0; i < numParticles - 1; i++) {
+        for (int j = i + 1; j < numParticles; j++) {
+            Fx[i] += dPhi_dx[i][j];
+            Fy[i] += dPhi_dy[i][j];
+            Fz[i] += dPhi_dz[i][j];
+            Fx[j] -= dPhi_dx[i][j];
+            Fy[j] -= dPhi_dy[i][j];
+            Fz[j] -= dPhi_dz[i][j];
+        }
+    }
+    
+    int m;
+    for (int i = 0; i < numParticles - 1; i++) {
+        if (type[i] == 0) {
+            m = 1;
+        } else {
+            m = 10;
+        }
+        u[i+1] = u[i] + dt * Fx[i]/m;
+        v[i+1] = v[i] + dt * Fy[i]/m;
+        w[i+1] = w[i] + dt * Fz[i]/m;
+        x[i+1] = x[i] + dt * u[i];
+        y[i+1] = y[i] + dt * v[i];
+        z[i+1] = z[i] + dt * w[i];
+    }
+    
+    // Open file once outside the simulation loop
+    ofstream outfile("output.txt");
+    for (int t = 0; t < time; t++) {
+        outfile << "Time step " << t << endl;
+        outfile << "Net force arrays:" << endl;
+        outfile << "Fx: ";
+        for (int i = 0; i < numParticles; i++) {
+            outfile << Fx[i] << "\t";
+        }
+        outfile << "\nFy: ";
+        for (int i = 0; i < numParticles; i++) {
+            outfile << Fy[i] << "\t";
+        }
+        outfile << "\nFz: ";
+        for (int i = 0; i < numParticles; i++) {
+            outfile << Fz[i] << "\t";
+        }
+        outfile << "\nUpdated positions and velocities:" << endl;
+        for (int i = 0; i < numParticles; i++) {
+            outfile << "Particle " << i << ": "
+                    << " x = " << x[i]
+                    << ", y = " << y[i]
+                    << ", z = " << z[i]
+                    << " ; u = " << u[i]
+                    << ", v = " << v[i]
+                    << ", w = " << w[i]
+                    << endl;
+        }
+        outfile << "\n";
+    }
+    outfile.close();
+    
     return 0;
-
 }
-
-
-
-
-
-
-
-
