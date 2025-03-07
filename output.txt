@@ -1,0 +1,500 @@
+Time step 0
+Net force arrays:
+Fx: -32.0354	32.0349	0.000512063	
+Fy: 27.76	-27.7642	0.00420643	
+Fz: -0.0012096	-0.00018547	0.00139507	
+Updated positions and velocities:
+Particle 0:  x = 8.5, y = 11.3, z = 10 ; u = 0.5, v = 0, w = 0
+Particle 1:  x = 8.5005, y = 11.3, z = 10 ; u = 0.496796, v = 0.002776, w = -1.2096e-07
+Particle 2:  x = 8.501, y = 11.3, z = 10 ; u = 0.5, v = -4.20643e-07, w = -1.39507e-07
+
+Time step 1
+Net force arrays:
+Fx: -32.0354	32.0349	0.000512063	
+Fy: 27.76	-27.7642	0.00420643	
+Fz: -0.0012096	-0.00018547	0.00139507	
+Updated positions and velocities:
+Particle 0:  x = 8.5, y = 11.3, z = 10 ; u = 0.5, v = 0, w = 0
+Particle 1:  x = 8.5005, y = 11.3, z = 10 ; u = 0.496796, v = 0.002776, w = -1.2096e-07
+Particle 2:  x = 8.501, y = 11.3, z = 10 ; u = 0.5, v = -4.20643e-07, w = -1.39507e-07
+
+Time step 2
+Net force arrays:
+Fx: -32.0354	32.0349	0.000512063	
+Fy: 27.76	-27.7642	0.00420643	
+Fz: -0.0012096	-0.00018547	0.00139507	
+Updated positions and velocities:
+Particle 0:  x = 8.5, y = 11.3, z = 10 ; u = 0.5, v = 0, w = 0
+Particle 1:  x = 8.5005, y = 11.3, z = 10 ; u = 0.496796, v = 0.002776, w = -1.2096e-07
+Particle 2:  x = 8.501, y = 11.3, z = 10 ; u = 0.5, v = -4.20643e-07, w = -1.39507e-07
+
+Time step 3
+Net force arrays:
+Fx: -32.0354	32.0349	0.000512063	
+Fy: 27.76	-27.7642	0.00420643	
+Fz: -0.0012096	-0.00018547	0.00139507	
+Updated positions and velocities:
+Particle 0:  x = 8.5, y = 11.3, z = 10 ; u = 0.5, v = 0, w = 0
+Particle 1:  x = 8.5005, y = 11.3, z = 10 ; u = 0.496796, v = 0.002776, w = -1.2096e-07
+Particle 2:  x = 8.501, y = 11.3, z = 10 ; u = 0.5, v = -4.20643e-07, w = -1.39507e-07
+
+Time step 4
+Net force arrays:
+Fx: -32.0354	32.0349	0.000512063	
+Fy: 27.76	-27.7642	0.00420643	
+Fz: -0.0012096	-0.00018547	0.00139507	
+Updated positions and velocities:
+Particle 0:  x = 8.5, y = 11.3, z = 10 ; u = 0.5, v = 0, w = 0
+Particle 1:  x = 8.5005, y = 11.3, z = 10 ; u = 0.496796, v = 0.002776, w = -1.2096e-07
+Particle 2:  x = 8.501, y = 11.3, z = 10 ; u = 0.5, v = -4.20643e-07, w = -1.39507e-07
+
+Time step 5
+Net force arrays:
+Fx: -32.0354	32.0349	0.000512063	
+Fy: 27.76	-27.7642	0.00420643	
+Fz: -0.0012096	-0.00018547	0.00139507	
+Updated positions and velocities:
+Particle 0:  x = 8.5, y = 11.3, z = 10 ; u = 0.5, v = 0, w = 0
+Particle 1:  x = 8.5005, y = 11.3, z = 10 ; u = 0.496796, v = 0.002776, w = -1.2096e-07
+Particle 2:  x = 8.501, y = 11.3, z = 10 ; u = 0.5, v = -4.20643e-07, w = -1.39507e-07
+
+Time step 6
+Net force arrays:
+Fx: -32.0354	32.0349	0.000512063	
+Fy: 27.76	-27.7642	0.00420643	
+Fz: -0.0012096	-0.00018547	0.00139507	
+Updated positions and velocities:
+Particle 0:  x = 8.5, y = 11.3, z = 10 ; u = 0.5, v = 0, w = 0
+Particle 1:  x = 8.5005, y = 11.3, z = 10 ; u = 0.496796, v = 0.002776, w = -1.2096e-07
+Particle 2:  x = 8.501, y = 11.3, z = 10 ; u = 0.5, v = -4.20643e-07, w = -1.39507e-07
+
+Time step 7
+Net force arrays:
+Fx: -32.0354	32.0349	0.000512063	
+Fy: 27.76	-27.7642	0.00420643	
+Fz: -0.0012096	-0.00018547	0.00139507	
+Updated positions and velocities:
+Particle 0:  x = 8.5, y = 11.3, z = 10 ; u = 0.5, v = 0, w = 0
+Particle 1:  x = 8.5005, y = 11.3, z = 10 ; u = 0.496796, v = 0.002776, w = -1.2096e-07
+Particle 2:  x = 8.501, y = 11.3, z = 10 ; u = 0.5, v = -4.20643e-07, w = -1.39507e-07
+
+Time step 8
+Net force arrays:
+Fx: -32.0354	32.0349	0.000512063	
+Fy: 27.76	-27.7642	0.00420643	
+Fz: -0.0012096	-0.00018547	0.00139507	
+Updated positions and velocities:
+Particle 0:  x = 8.5, y = 11.3, z = 10 ; u = 0.5, v = 0, w = 0
+Particle 1:  x = 8.5005, y = 11.3, z = 10 ; u = 0.496796, v = 0.002776, w = -1.2096e-07
+Particle 2:  x = 8.501, y = 11.3, z = 10 ; u = 0.5, v = -4.20643e-07, w = -1.39507e-07
+
+Time step 9
+Net force arrays:
+Fx: -32.0354	32.0349	0.000512063	
+Fy: 27.76	-27.7642	0.00420643	
+Fz: -0.0012096	-0.00018547	0.00139507	
+Updated positions and velocities:
+Particle 0:  x = 8.5, y = 11.3, z = 10 ; u = 0.5, v = 0, w = 0
+Particle 1:  x = 8.5005, y = 11.3, z = 10 ; u = 0.496796, v = 0.002776, w = -1.2096e-07
+Particle 2:  x = 8.501, y = 11.3, z = 10 ; u = 0.5, v = -4.20643e-07, w = -1.39507e-07
+
+Time step 10
+Net force arrays:
+Fx: -32.0354	32.0349	0.000512063	
+Fy: 27.76	-27.7642	0.00420643	
+Fz: -0.0012096	-0.00018547	0.00139507	
+Updated positions and velocities:
+Particle 0:  x = 8.5, y = 11.3, z = 10 ; u = 0.5, v = 0, w = 0
+Particle 1:  x = 8.5005, y = 11.3, z = 10 ; u = 0.496796, v = 0.002776, w = -1.2096e-07
+Particle 2:  x = 8.501, y = 11.3, z = 10 ; u = 0.5, v = -4.20643e-07, w = -1.39507e-07
+
+Time step 11
+Net force arrays:
+Fx: -32.0354	32.0349	0.000512063	
+Fy: 27.76	-27.7642	0.00420643	
+Fz: -0.0012096	-0.00018547	0.00139507	
+Updated positions and velocities:
+Particle 0:  x = 8.5, y = 11.3, z = 10 ; u = 0.5, v = 0, w = 0
+Particle 1:  x = 8.5005, y = 11.3, z = 10 ; u = 0.496796, v = 0.002776, w = -1.2096e-07
+Particle 2:  x = 8.501, y = 11.3, z = 10 ; u = 0.5, v = -4.20643e-07, w = -1.39507e-07
+
+Time step 12
+Net force arrays:
+Fx: -32.0354	32.0349	0.000512063	
+Fy: 27.76	-27.7642	0.00420643	
+Fz: -0.0012096	-0.00018547	0.00139507	
+Updated positions and velocities:
+Particle 0:  x = 8.5, y = 11.3, z = 10 ; u = 0.5, v = 0, w = 0
+Particle 1:  x = 8.5005, y = 11.3, z = 10 ; u = 0.496796, v = 0.002776, w = -1.2096e-07
+Particle 2:  x = 8.501, y = 11.3, z = 10 ; u = 0.5, v = -4.20643e-07, w = -1.39507e-07
+
+Time step 13
+Net force arrays:
+Fx: -32.0354	32.0349	0.000512063	
+Fy: 27.76	-27.7642	0.00420643	
+Fz: -0.0012096	-0.00018547	0.00139507	
+Updated positions and velocities:
+Particle 0:  x = 8.5, y = 11.3, z = 10 ; u = 0.5, v = 0, w = 0
+Particle 1:  x = 8.5005, y = 11.3, z = 10 ; u = 0.496796, v = 0.002776, w = -1.2096e-07
+Particle 2:  x = 8.501, y = 11.3, z = 10 ; u = 0.5, v = -4.20643e-07, w = -1.39507e-07
+
+Time step 14
+Net force arrays:
+Fx: -32.0354	32.0349	0.000512063	
+Fy: 27.76	-27.7642	0.00420643	
+Fz: -0.0012096	-0.00018547	0.00139507	
+Updated positions and velocities:
+Particle 0:  x = 8.5, y = 11.3, z = 10 ; u = 0.5, v = 0, w = 0
+Particle 1:  x = 8.5005, y = 11.3, z = 10 ; u = 0.496796, v = 0.002776, w = -1.2096e-07
+Particle 2:  x = 8.501, y = 11.3, z = 10 ; u = 0.5, v = -4.20643e-07, w = -1.39507e-07
+
+Time step 15
+Net force arrays:
+Fx: -32.0354	32.0349	0.000512063	
+Fy: 27.76	-27.7642	0.00420643	
+Fz: -0.0012096	-0.00018547	0.00139507	
+Updated positions and velocities:
+Particle 0:  x = 8.5, y = 11.3, z = 10 ; u = 0.5, v = 0, w = 0
+Particle 1:  x = 8.5005, y = 11.3, z = 10 ; u = 0.496796, v = 0.002776, w = -1.2096e-07
+Particle 2:  x = 8.501, y = 11.3, z = 10 ; u = 0.5, v = -4.20643e-07, w = -1.39507e-07
+
+Time step 16
+Net force arrays:
+Fx: -32.0354	32.0349	0.000512063	
+Fy: 27.76	-27.7642	0.00420643	
+Fz: -0.0012096	-0.00018547	0.00139507	
+Updated positions and velocities:
+Particle 0:  x = 8.5, y = 11.3, z = 10 ; u = 0.5, v = 0, w = 0
+Particle 1:  x = 8.5005, y = 11.3, z = 10 ; u = 0.496796, v = 0.002776, w = -1.2096e-07
+Particle 2:  x = 8.501, y = 11.3, z = 10 ; u = 0.5, v = -4.20643e-07, w = -1.39507e-07
+
+Time step 17
+Net force arrays:
+Fx: -32.0354	32.0349	0.000512063	
+Fy: 27.76	-27.7642	0.00420643	
+Fz: -0.0012096	-0.00018547	0.00139507	
+Updated positions and velocities:
+Particle 0:  x = 8.5, y = 11.3, z = 10 ; u = 0.5, v = 0, w = 0
+Particle 1:  x = 8.5005, y = 11.3, z = 10 ; u = 0.496796, v = 0.002776, w = -1.2096e-07
+Particle 2:  x = 8.501, y = 11.3, z = 10 ; u = 0.5, v = -4.20643e-07, w = -1.39507e-07
+
+Time step 18
+Net force arrays:
+Fx: -32.0354	32.0349	0.000512063	
+Fy: 27.76	-27.7642	0.00420643	
+Fz: -0.0012096	-0.00018547	0.00139507	
+Updated positions and velocities:
+Particle 0:  x = 8.5, y = 11.3, z = 10 ; u = 0.5, v = 0, w = 0
+Particle 1:  x = 8.5005, y = 11.3, z = 10 ; u = 0.496796, v = 0.002776, w = -1.2096e-07
+Particle 2:  x = 8.501, y = 11.3, z = 10 ; u = 0.5, v = -4.20643e-07, w = -1.39507e-07
+
+Time step 19
+Net force arrays:
+Fx: -32.0354	32.0349	0.000512063	
+Fy: 27.76	-27.7642	0.00420643	
+Fz: -0.0012096	-0.00018547	0.00139507	
+Updated positions and velocities:
+Particle 0:  x = 8.5, y = 11.3, z = 10 ; u = 0.5, v = 0, w = 0
+Particle 1:  x = 8.5005, y = 11.3, z = 10 ; u = 0.496796, v = 0.002776, w = -1.2096e-07
+Particle 2:  x = 8.501, y = 11.3, z = 10 ; u = 0.5, v = -4.20643e-07, w = -1.39507e-07
+
+Time step 20
+Net force arrays:
+Fx: -32.0354	32.0349	0.000512063	
+Fy: 27.76	-27.7642	0.00420643	
+Fz: -0.0012096	-0.00018547	0.00139507	
+Updated positions and velocities:
+Particle 0:  x = 8.5, y = 11.3, z = 10 ; u = 0.5, v = 0, w = 0
+Particle 1:  x = 8.5005, y = 11.3, z = 10 ; u = 0.496796, v = 0.002776, w = -1.2096e-07
+Particle 2:  x = 8.501, y = 11.3, z = 10 ; u = 0.5, v = -4.20643e-07, w = -1.39507e-07
+
+Time step 21
+Net force arrays:
+Fx: -32.0354	32.0349	0.000512063	
+Fy: 27.76	-27.7642	0.00420643	
+Fz: -0.0012096	-0.00018547	0.00139507	
+Updated positions and velocities:
+Particle 0:  x = 8.5, y = 11.3, z = 10 ; u = 0.5, v = 0, w = 0
+Particle 1:  x = 8.5005, y = 11.3, z = 10 ; u = 0.496796, v = 0.002776, w = -1.2096e-07
+Particle 2:  x = 8.501, y = 11.3, z = 10 ; u = 0.5, v = -4.20643e-07, w = -1.39507e-07
+
+Time step 22
+Net force arrays:
+Fx: -32.0354	32.0349	0.000512063	
+Fy: 27.76	-27.7642	0.00420643	
+Fz: -0.0012096	-0.00018547	0.00139507	
+Updated positions and velocities:
+Particle 0:  x = 8.5, y = 11.3, z = 10 ; u = 0.5, v = 0, w = 0
+Particle 1:  x = 8.5005, y = 11.3, z = 10 ; u = 0.496796, v = 0.002776, w = -1.2096e-07
+Particle 2:  x = 8.501, y = 11.3, z = 10 ; u = 0.5, v = -4.20643e-07, w = -1.39507e-07
+
+Time step 23
+Net force arrays:
+Fx: -32.0354	32.0349	0.000512063	
+Fy: 27.76	-27.7642	0.00420643	
+Fz: -0.0012096	-0.00018547	0.00139507	
+Updated positions and velocities:
+Particle 0:  x = 8.5, y = 11.3, z = 10 ; u = 0.5, v = 0, w = 0
+Particle 1:  x = 8.5005, y = 11.3, z = 10 ; u = 0.496796, v = 0.002776, w = -1.2096e-07
+Particle 2:  x = 8.501, y = 11.3, z = 10 ; u = 0.5, v = -4.20643e-07, w = -1.39507e-07
+
+Time step 24
+Net force arrays:
+Fx: -32.0354	32.0349	0.000512063	
+Fy: 27.76	-27.7642	0.00420643	
+Fz: -0.0012096	-0.00018547	0.00139507	
+Updated positions and velocities:
+Particle 0:  x = 8.5, y = 11.3, z = 10 ; u = 0.5, v = 0, w = 0
+Particle 1:  x = 8.5005, y = 11.3, z = 10 ; u = 0.496796, v = 0.002776, w = -1.2096e-07
+Particle 2:  x = 8.501, y = 11.3, z = 10 ; u = 0.5, v = -4.20643e-07, w = -1.39507e-07
+
+Time step 25
+Net force arrays:
+Fx: -32.0354	32.0349	0.000512063	
+Fy: 27.76	-27.7642	0.00420643	
+Fz: -0.0012096	-0.00018547	0.00139507	
+Updated positions and velocities:
+Particle 0:  x = 8.5, y = 11.3, z = 10 ; u = 0.5, v = 0, w = 0
+Particle 1:  x = 8.5005, y = 11.3, z = 10 ; u = 0.496796, v = 0.002776, w = -1.2096e-07
+Particle 2:  x = 8.501, y = 11.3, z = 10 ; u = 0.5, v = -4.20643e-07, w = -1.39507e-07
+
+Time step 26
+Net force arrays:
+Fx: -32.0354	32.0349	0.000512063	
+Fy: 27.76	-27.7642	0.00420643	
+Fz: -0.0012096	-0.00018547	0.00139507	
+Updated positions and velocities:
+Particle 0:  x = 8.5, y = 11.3, z = 10 ; u = 0.5, v = 0, w = 0
+Particle 1:  x = 8.5005, y = 11.3, z = 10 ; u = 0.496796, v = 0.002776, w = -1.2096e-07
+Particle 2:  x = 8.501, y = 11.3, z = 10 ; u = 0.5, v = -4.20643e-07, w = -1.39507e-07
+
+Time step 27
+Net force arrays:
+Fx: -32.0354	32.0349	0.000512063	
+Fy: 27.76	-27.7642	0.00420643	
+Fz: -0.0012096	-0.00018547	0.00139507	
+Updated positions and velocities:
+Particle 0:  x = 8.5, y = 11.3, z = 10 ; u = 0.5, v = 0, w = 0
+Particle 1:  x = 8.5005, y = 11.3, z = 10 ; u = 0.496796, v = 0.002776, w = -1.2096e-07
+Particle 2:  x = 8.501, y = 11.3, z = 10 ; u = 0.5, v = -4.20643e-07, w = -1.39507e-07
+
+Time step 28
+Net force arrays:
+Fx: -32.0354	32.0349	0.000512063	
+Fy: 27.76	-27.7642	0.00420643	
+Fz: -0.0012096	-0.00018547	0.00139507	
+Updated positions and velocities:
+Particle 0:  x = 8.5, y = 11.3, z = 10 ; u = 0.5, v = 0, w = 0
+Particle 1:  x = 8.5005, y = 11.3, z = 10 ; u = 0.496796, v = 0.002776, w = -1.2096e-07
+Particle 2:  x = 8.501, y = 11.3, z = 10 ; u = 0.5, v = -4.20643e-07, w = -1.39507e-07
+
+Time step 29
+Net force arrays:
+Fx: -32.0354	32.0349	0.000512063	
+Fy: 27.76	-27.7642	0.00420643	
+Fz: -0.0012096	-0.00018547	0.00139507	
+Updated positions and velocities:
+Particle 0:  x = 8.5, y = 11.3, z = 10 ; u = 0.5, v = 0, w = 0
+Particle 1:  x = 8.5005, y = 11.3, z = 10 ; u = 0.496796, v = 0.002776, w = -1.2096e-07
+Particle 2:  x = 8.501, y = 11.3, z = 10 ; u = 0.5, v = -4.20643e-07, w = -1.39507e-07
+
+Time step 30
+Net force arrays:
+Fx: -32.0354	32.0349	0.000512063	
+Fy: 27.76	-27.7642	0.00420643	
+Fz: -0.0012096	-0.00018547	0.00139507	
+Updated positions and velocities:
+Particle 0:  x = 8.5, y = 11.3, z = 10 ; u = 0.5, v = 0, w = 0
+Particle 1:  x = 8.5005, y = 11.3, z = 10 ; u = 0.496796, v = 0.002776, w = -1.2096e-07
+Particle 2:  x = 8.501, y = 11.3, z = 10 ; u = 0.5, v = -4.20643e-07, w = -1.39507e-07
+
+Time step 31
+Net force arrays:
+Fx: -32.0354	32.0349	0.000512063	
+Fy: 27.76	-27.7642	0.00420643	
+Fz: -0.0012096	-0.00018547	0.00139507	
+Updated positions and velocities:
+Particle 0:  x = 8.5, y = 11.3, z = 10 ; u = 0.5, v = 0, w = 0
+Particle 1:  x = 8.5005, y = 11.3, z = 10 ; u = 0.496796, v = 0.002776, w = -1.2096e-07
+Particle 2:  x = 8.501, y = 11.3, z = 10 ; u = 0.5, v = -4.20643e-07, w = -1.39507e-07
+
+Time step 32
+Net force arrays:
+Fx: -32.0354	32.0349	0.000512063	
+Fy: 27.76	-27.7642	0.00420643	
+Fz: -0.0012096	-0.00018547	0.00139507	
+Updated positions and velocities:
+Particle 0:  x = 8.5, y = 11.3, z = 10 ; u = 0.5, v = 0, w = 0
+Particle 1:  x = 8.5005, y = 11.3, z = 10 ; u = 0.496796, v = 0.002776, w = -1.2096e-07
+Particle 2:  x = 8.501, y = 11.3, z = 10 ; u = 0.5, v = -4.20643e-07, w = -1.39507e-07
+
+Time step 33
+Net force arrays:
+Fx: -32.0354	32.0349	0.000512063	
+Fy: 27.76	-27.7642	0.00420643	
+Fz: -0.0012096	-0.00018547	0.00139507	
+Updated positions and velocities:
+Particle 0:  x = 8.5, y = 11.3, z = 10 ; u = 0.5, v = 0, w = 0
+Particle 1:  x = 8.5005, y = 11.3, z = 10 ; u = 0.496796, v = 0.002776, w = -1.2096e-07
+Particle 2:  x = 8.501, y = 11.3, z = 10 ; u = 0.5, v = -4.20643e-07, w = -1.39507e-07
+
+Time step 34
+Net force arrays:
+Fx: -32.0354	32.0349	0.000512063	
+Fy: 27.76	-27.7642	0.00420643	
+Fz: -0.0012096	-0.00018547	0.00139507	
+Updated positions and velocities:
+Particle 0:  x = 8.5, y = 11.3, z = 10 ; u = 0.5, v = 0, w = 0
+Particle 1:  x = 8.5005, y = 11.3, z = 10 ; u = 0.496796, v = 0.002776, w = -1.2096e-07
+Particle 2:  x = 8.501, y = 11.3, z = 10 ; u = 0.5, v = -4.20643e-07, w = -1.39507e-07
+
+Time step 35
+Net force arrays:
+Fx: -32.0354	32.0349	0.000512063	
+Fy: 27.76	-27.7642	0.00420643	
+Fz: -0.0012096	-0.00018547	0.00139507	
+Updated positions and velocities:
+Particle 0:  x = 8.5, y = 11.3, z = 10 ; u = 0.5, v = 0, w = 0
+Particle 1:  x = 8.5005, y = 11.3, z = 10 ; u = 0.496796, v = 0.002776, w = -1.2096e-07
+Particle 2:  x = 8.501, y = 11.3, z = 10 ; u = 0.5, v = -4.20643e-07, w = -1.39507e-07
+
+Time step 36
+Net force arrays:
+Fx: -32.0354	32.0349	0.000512063	
+Fy: 27.76	-27.7642	0.00420643	
+Fz: -0.0012096	-0.00018547	0.00139507	
+Updated positions and velocities:
+Particle 0:  x = 8.5, y = 11.3, z = 10 ; u = 0.5, v = 0, w = 0
+Particle 1:  x = 8.5005, y = 11.3, z = 10 ; u = 0.496796, v = 0.002776, w = -1.2096e-07
+Particle 2:  x = 8.501, y = 11.3, z = 10 ; u = 0.5, v = -4.20643e-07, w = -1.39507e-07
+
+Time step 37
+Net force arrays:
+Fx: -32.0354	32.0349	0.000512063	
+Fy: 27.76	-27.7642	0.00420643	
+Fz: -0.0012096	-0.00018547	0.00139507	
+Updated positions and velocities:
+Particle 0:  x = 8.5, y = 11.3, z = 10 ; u = 0.5, v = 0, w = 0
+Particle 1:  x = 8.5005, y = 11.3, z = 10 ; u = 0.496796, v = 0.002776, w = -1.2096e-07
+Particle 2:  x = 8.501, y = 11.3, z = 10 ; u = 0.5, v = -4.20643e-07, w = -1.39507e-07
+
+Time step 38
+Net force arrays:
+Fx: -32.0354	32.0349	0.000512063	
+Fy: 27.76	-27.7642	0.00420643	
+Fz: -0.0012096	-0.00018547	0.00139507	
+Updated positions and velocities:
+Particle 0:  x = 8.5, y = 11.3, z = 10 ; u = 0.5, v = 0, w = 0
+Particle 1:  x = 8.5005, y = 11.3, z = 10 ; u = 0.496796, v = 0.002776, w = -1.2096e-07
+Particle 2:  x = 8.501, y = 11.3, z = 10 ; u = 0.5, v = -4.20643e-07, w = -1.39507e-07
+
+Time step 39
+Net force arrays:
+Fx: -32.0354	32.0349	0.000512063	
+Fy: 27.76	-27.7642	0.00420643	
+Fz: -0.0012096	-0.00018547	0.00139507	
+Updated positions and velocities:
+Particle 0:  x = 8.5, y = 11.3, z = 10 ; u = 0.5, v = 0, w = 0
+Particle 1:  x = 8.5005, y = 11.3, z = 10 ; u = 0.496796, v = 0.002776, w = -1.2096e-07
+Particle 2:  x = 8.501, y = 11.3, z = 10 ; u = 0.5, v = -4.20643e-07, w = -1.39507e-07
+
+Time step 40
+Net force arrays:
+Fx: -32.0354	32.0349	0.000512063	
+Fy: 27.76	-27.7642	0.00420643	
+Fz: -0.0012096	-0.00018547	0.00139507	
+Updated positions and velocities:
+Particle 0:  x = 8.5, y = 11.3, z = 10 ; u = 0.5, v = 0, w = 0
+Particle 1:  x = 8.5005, y = 11.3, z = 10 ; u = 0.496796, v = 0.002776, w = -1.2096e-07
+Particle 2:  x = 8.501, y = 11.3, z = 10 ; u = 0.5, v = -4.20643e-07, w = -1.39507e-07
+
+Time step 41
+Net force arrays:
+Fx: -32.0354	32.0349	0.000512063	
+Fy: 27.76	-27.7642	0.00420643	
+Fz: -0.0012096	-0.00018547	0.00139507	
+Updated positions and velocities:
+Particle 0:  x = 8.5, y = 11.3, z = 10 ; u = 0.5, v = 0, w = 0
+Particle 1:  x = 8.5005, y = 11.3, z = 10 ; u = 0.496796, v = 0.002776, w = -1.2096e-07
+Particle 2:  x = 8.501, y = 11.3, z = 10 ; u = 0.5, v = -4.20643e-07, w = -1.39507e-07
+
+Time step 42
+Net force arrays:
+Fx: -32.0354	32.0349	0.000512063	
+Fy: 27.76	-27.7642	0.00420643	
+Fz: -0.0012096	-0.00018547	0.00139507	
+Updated positions and velocities:
+Particle 0:  x = 8.5, y = 11.3, z = 10 ; u = 0.5, v = 0, w = 0
+Particle 1:  x = 8.5005, y = 11.3, z = 10 ; u = 0.496796, v = 0.002776, w = -1.2096e-07
+Particle 2:  x = 8.501, y = 11.3, z = 10 ; u = 0.5, v = -4.20643e-07, w = -1.39507e-07
+
+Time step 43
+Net force arrays:
+Fx: -32.0354	32.0349	0.000512063	
+Fy: 27.76	-27.7642	0.00420643	
+Fz: -0.0012096	-0.00018547	0.00139507	
+Updated positions and velocities:
+Particle 0:  x = 8.5, y = 11.3, z = 10 ; u = 0.5, v = 0, w = 0
+Particle 1:  x = 8.5005, y = 11.3, z = 10 ; u = 0.496796, v = 0.002776, w = -1.2096e-07
+Particle 2:  x = 8.501, y = 11.3, z = 10 ; u = 0.5, v = -4.20643e-07, w = -1.39507e-07
+
+Time step 44
+Net force arrays:
+Fx: -32.0354	32.0349	0.000512063	
+Fy: 27.76	-27.7642	0.00420643	
+Fz: -0.0012096	-0.00018547	0.00139507	
+Updated positions and velocities:
+Particle 0:  x = 8.5, y = 11.3, z = 10 ; u = 0.5, v = 0, w = 0
+Particle 1:  x = 8.5005, y = 11.3, z = 10 ; u = 0.496796, v = 0.002776, w = -1.2096e-07
+Particle 2:  x = 8.501, y = 11.3, z = 10 ; u = 0.5, v = -4.20643e-07, w = -1.39507e-07
+
+Time step 45
+Net force arrays:
+Fx: -32.0354	32.0349	0.000512063	
+Fy: 27.76	-27.7642	0.00420643	
+Fz: -0.0012096	-0.00018547	0.00139507	
+Updated positions and velocities:
+Particle 0:  x = 8.5, y = 11.3, z = 10 ; u = 0.5, v = 0, w = 0
+Particle 1:  x = 8.5005, y = 11.3, z = 10 ; u = 0.496796, v = 0.002776, w = -1.2096e-07
+Particle 2:  x = 8.501, y = 11.3, z = 10 ; u = 0.5, v = -4.20643e-07, w = -1.39507e-07
+
+Time step 46
+Net force arrays:
+Fx: -32.0354	32.0349	0.000512063	
+Fy: 27.76	-27.7642	0.00420643	
+Fz: -0.0012096	-0.00018547	0.00139507	
+Updated positions and velocities:
+Particle 0:  x = 8.5, y = 11.3, z = 10 ; u = 0.5, v = 0, w = 0
+Particle 1:  x = 8.5005, y = 11.3, z = 10 ; u = 0.496796, v = 0.002776, w = -1.2096e-07
+Particle 2:  x = 8.501, y = 11.3, z = 10 ; u = 0.5, v = -4.20643e-07, w = -1.39507e-07
+
+Time step 47
+Net force arrays:
+Fx: -32.0354	32.0349	0.000512063	
+Fy: 27.76	-27.7642	0.00420643	
+Fz: -0.0012096	-0.00018547	0.00139507	
+Updated positions and velocities:
+Particle 0:  x = 8.5, y = 11.3, z = 10 ; u = 0.5, v = 0, w = 0
+Particle 1:  x = 8.5005, y = 11.3, z = 10 ; u = 0.496796, v = 0.002776, w = -1.2096e-07
+Particle 2:  x = 8.501, y = 11.3, z = 10 ; u = 0.5, v = -4.20643e-07, w = -1.39507e-07
+
+Time step 48
+Net force arrays:
+Fx: -32.0354	32.0349	0.000512063	
+Fy: 27.76	-27.7642	0.00420643	
+Fz: -0.0012096	-0.00018547	0.00139507	
+Updated positions and velocities:
+Particle 0:  x = 8.5, y = 11.3, z = 10 ; u = 0.5, v = 0, w = 0
+Particle 1:  x = 8.5005, y = 11.3, z = 10 ; u = 0.496796, v = 0.002776, w = -1.2096e-07
+Particle 2:  x = 8.501, y = 11.3, z = 10 ; u = 0.5, v = -4.20643e-07, w = -1.39507e-07
+
+Time step 49
+Net force arrays:
+Fx: -32.0354	32.0349	0.000512063	
+Fy: 27.76	-27.7642	0.00420643	
+Fz: -0.0012096	-0.00018547	0.00139507	
+Updated positions and velocities:
+Particle 0:  x = 8.5, y = 11.3, z = 10 ; u = 0.5, v = 0, w = 0
+Particle 1:  x = 8.5005, y = 11.3, z = 10 ; u = 0.496796, v = 0.002776, w = -1.2096e-07
+Particle 2:  x = 8.501, y = 11.3, z = 10 ; u = 0.5, v = -4.20643e-07, w = -1.39507e-07
+
