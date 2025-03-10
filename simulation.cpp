@@ -175,85 +175,93 @@ int main(int argc, char *argv[]) {              //read cmd args w main params.
     vector<vector<double>> dPhi_dx(numParticles, vector<double>(numParticles, 0.0));
     vector<vector<double>> dPhi_dy(numParticles, vector<double>(numParticles, 0.0));
     vector<vector<double>> dPhi_dz(numParticles, vector<double>(numParticles, 0.0));
-    for (int i = 0; i < numParticles - 1; i++) {
-        for (int j = i + 1; j < numParticles; j++) {
-            xij[i][j] = X[0][i] - X[0][j];
-            yij[i][j] = Y[0][i] - Y[0][j];
-            zij[i][j] = Z[0][i] - Z[0][j];
-            rij[i][j] = sqrt(xij[i][j]*xij[i][j] + yij[i][j]*yij[i][j] + zij[i][j]*zij[i][j]);
-            int t1 = type[i];
-            int t2 = type[j];
-            int e = epsilon[t1][t2];
-            int s = sigma[t1][t2];
-            dPhi_dx[i][j] = -24 * e * xij[i][j] * ((2*pow(s,12)/pow(rij[i][j],14)) - (pow(s,6)/pow(rij[i][j],8)));
-            dPhi_dy[i][j] = -24 * e * yij[i][j] * ((2*pow(s,12)/pow(rij[i][j],14)) - (pow(s,6)/pow(rij[i][j],8)));
-            dPhi_dz[i][j] = -24 * e * zij[i][j] * ((2*pow(s,12)/pow(rij[i][j],14)) - (pow(s,6)/pow(rij[i][j],8)));
-        }
-    }
-    
-    vector<double> Fx(numParticles, 0.0), Fy(numParticles, 0.0), Fz(numParticles, 0.0);
-    for (int i = 0; i < numParticles - 1; i++) {
-        for (int j = i + 1; j < numParticles; j++) {
-            Fx[i] += dPhi_dx[i][j];
-            Fy[i] += dPhi_dy[i][j];
-            Fz[i] += dPhi_dz[i][j];
-            Fx[j] -= dPhi_dx[i][j];
-            Fy[j] -= dPhi_dy[i][j];
-            Fz[j] -= dPhi_dz[i][j];
-        }
-    }
-    
+
     int m;
-    for (int t = 1; t < totalSteps; t++) {
-        for (int i = 0; i < numParticles; i++) {
-            if (type[i] == 0) {
-                m = 1;
-            } else {
-                m = 10;
+    for (int t = 1; t < timestamps.size(); t++) {
+        for (int i = 0; i < numParticles - 1; i++) {
+            for (int j = i + 1; j < numParticles; j++) {
+                xij[i][j] = X[t-1][i] - X[t-1][j];
+                yij[i][j] = Y[t-1][i] - Y[t-1][j];
+                zij[i][j] = Z[t-1][i] - Z[t-1][j];
+                rij[i][j] = sqrt(xij[i][j]*xij[i][j] + yij[i][j]*yij[i][j] + zij[i][j]*zij[i][j]);
+                int t1 = type[i];
+                int t2 = type[j];
+                int e = epsilon[t1][t2];
+                int s = sigma[t1][t2];
+                dPhi_dx[i][j] = -24 * e * xij[i][j] * ((2*pow(s,12)/pow(rij[i][j],14)) - (pow(s,6)/pow(rij[i][j],8)));
+                dPhi_dy[i][j] = -24 * e * yij[i][j] * ((2*pow(s,12)/pow(rij[i][j],14)) - (pow(s,6)/pow(rij[i][j],8)));
+                dPhi_dz[i][j] = -24 * e * zij[i][j] * ((2*pow(s,12)/pow(rij[i][j],14)) - (pow(s,6)/pow(rij[i][j],8)));
             }
-            U[t][i] = U[t-1][i] + dt * Fx[i] / m;
-            V[t][i] = V[t-1][i] + dt * Fy[i] / m;
-            W[t][i] = W[t-1][i] + dt * Fz[i] / m;
-            X[t][i] = X[t-1][i] + dt * U[t-1][i];
-            Y[t][i] = Y[t-1][i] + dt * V[t-1][i];
-            Z[t][i] = Z[t-1][i] + dt * W[t-1][i];
-
-            if (X[t][i] > Lx) {
-                X[t][i] = 2*Lx - X[t][i];
-                U[t][i] = -abs(U[t][i]);
-            }
-            if (Y[t][i] > Ly) {
-                Y[t][i] = 2*Ly - Y[t][i];
-                V[t][i] = -abs(V[t][i]);
-            }
-            if (Z[t][i] > Lz) {
-                Z[t][i] = 2*Lz - Z[t][i];
-                W[t][i] = -abs(W[t][i]);
-            }
-
-            if (X[t][i] < 0) {
-                X[t][i] = - X[t][i];
-                U[t][i] = abs(U[t][i]);
-            }
-            if (Y[t][i] < 0) {
-                Y[t][i] = - Y[t][i];
-                V[t][i] = abs(V[t][i]);
-            }
-            if (Z[t][i] < 0) {
-                Z[t][i] = - Z[t][i];
-                W[t][i] = abs(W[t][i]);
-            }
-
         }
-        for (int i = 0; i < numParticles; i++) {
-            if (type[i] == 0) {
-                m = 1;
-            } else {
-                m = 10;
+        
+        vector<double> Fx(numParticles, 0.0), Fy(numParticles, 0.0), Fz(numParticles, 0.0);
+        for (int i = 0; i < numParticles - 1; i++) {
+            for (int j = i + 1; j < numParticles; j++) {
+                Fx[i] -= dPhi_dx[i][j];
+                Fy[i] -= dPhi_dy[i][j];
+                Fz[i] -= dPhi_dz[i][j];
+                Fx[j] += dPhi_dx[i][j];
+                Fy[j] += dPhi_dy[i][j];
+                Fz[j] += dPhi_dz[i][j];
             }
-            speed_history[t][i] = sqrt(U[t][i]*U[t][i] + V[t][i]*V[t][i] + W[t][i]*W[t][i]);
-            E_history[t][i] = 0.5 * m * speed_history[t][i] * speed_history[t][i];
         }
+        
+        
+            for (int i = 0; i < numParticles; i++) {
+                if (type[i] == 0) {
+                    m = 1;
+                } else {
+                    m = 10;
+                }
+                U[t][i] = U[t-1][i] + dt * Fx[i] / m;
+                V[t][i] = V[t-1][i] + dt * Fy[i] / m;
+                W[t][i] = W[t-1][i] + dt * Fz[i] / m;
+                X[t][i] = X[t-1][i] + dt * U[t-1][i];
+                Y[t][i] = Y[t-1][i] + dt * V[t-1][i];
+                Z[t][i] = Z[t-1][i] + dt * W[t-1][i];
+
+                if (X[t][i] > Lx) {
+                    X[t][i] = 2*Lx - X[t][i];
+                    U[t][i] = -abs(U[t][i]);
+                    cout << "boundary" << endl;
+                }
+                if (Y[t][i] > Ly) {
+                    Y[t][i] = 2*Ly - Y[t][i];
+                    V[t][i] = -abs(V[t][i]);
+                    cout << "boundary" << endl;
+                }
+                if (Z[t][i] > Lz) {
+                    Z[t][i] = 2*Lz - Z[t][i];
+                    W[t][i] = -abs(W[t][i]);
+                    cout << "boundary" << endl;
+                }
+
+                if (X[t][i] < 0) {
+                    X[t][i] = - X[t][i];
+                    U[t][i] = abs(U[t][i]);
+                    cout << "boundary" << endl;
+                }
+                if (Y[t][i] < 0) {
+                    Y[t][i] = - Y[t][i];
+                    V[t][i] = abs(V[t][i]);
+                    cout << "boundary" << endl;
+                }
+                if (Z[t][i] < 0) {
+                    Z[t][i] = - Z[t][i];
+                    W[t][i] = abs(W[t][i]);
+                    cout << "boundary" << endl;
+                }
+
+            }
+            for (int i = 0; i < numParticles; i++) {
+                if (type[i] == 0) {
+                    m = 1;
+                } else {
+                    m = 10;
+                }
+                speed_history[t][i] = sqrt(U[t][i]*U[t][i] + V[t][i]*V[t][i] + W[t][i]*W[t][i]);
+                E_history[t][i] = 0.5 * m * speed_history[t][i] * speed_history[t][i];
+            }
     }
     
     ofstream outfile("output.txt");
@@ -286,7 +294,23 @@ int main(int argc, char *argv[]) {              //read cmd args w main params.
         energyfile << "\n";
     }
     energyfile.close();
-    
+
+    ofstream posfile("positions.txt");
+    posfile << "time";
+    for (int i = 0; i < numParticles; i++) {
+        posfile << " x" << i << " y" << i;
+    }
+    posfile << "\n";
+    for (int i = 0; i < totalSteps; i++) {
+        posfile << timestamps[i];
+        for (int j = 0; j < numParticles; j++) {
+            posfile << " " << X[i][j] << " " << Y[i][j];
+        }
+        posfile << "\n";
+    }
+    posfile.close();
+
+
     return 0;
 }
 
