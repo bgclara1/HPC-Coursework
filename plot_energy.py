@@ -6,8 +6,8 @@ time = data[:, 0]
 E_history = data[:, 1:]
 
 plt.figure(figsize=(8,6))
-for i in range(E_history.shape[1]):
-    plt.plot(time, E_history[:, i], label=f'Particle {i}')
+#for i in range(E_history.shape[1]):
+plt.plot(time, E_history[:, 0], label=f'Particle {0}')
 
 plt.xlabel("Time")
 plt.ylabel("Kinetic Energy")
