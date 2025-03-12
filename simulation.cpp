@@ -89,23 +89,13 @@ int main(int argc, char *argv[]) {              //read cmd args w main params.
         {"w", {0.0, 0.0}},
         {"type", {1, 1}}
     };
-    testCaseDict["--Claras-test-case"] = {
-        {"runtime", {5}},
-        {"numParticles", {3}},
-        {"x", {8.5, 11.5, 10}},
-        {"y", {11.3, 8.7, 20}},
-        {"z", {10.0, 10.0, 13}},
-        {"u", {0.5, -0.5, -0.5}},
-        {"v", {0.0, 0.0, 0}},
-        {"w", {0.0, 0.0, 0}},
-        {"type", {1, 1, 0}}
-    };
+
     
     double runtime, percent_type1;
     int numParticles;
     vector<double> x, y, z, u, v, w, type;
     while (i < argc) {
-        cout << "Argument " << i + 1 << ": " << argv[i] << endl;
+      //  cout << "Argument " << i + 1 << ": " << argv[i] << endl;
         if (string(argv[i]) == "--Lx") {
             Lx = stod(argv[i+1]);
         } else if (string(argv[i]) == "--Ly") {
@@ -143,9 +133,9 @@ int main(int argc, char *argv[]) {              //read cmd args w main params.
     }
     
     if ((testCase == true) || (icRandomChosen == true && nProvided == true && timeProvided == true)) {
-        cout << "Command Line input well-formatted, carrying on..." << endl;
+      //  cout << "Command Line input well-formatted, carrying on..." << endl;
     } else {
-        cout << "Command line input formatted incorrectly, exiting program." << endl;
+      //  cout << "Command line input formatted incorrectly, exiting program." << endl;
         exit(1);
     }
     
@@ -163,8 +153,8 @@ int main(int argc, char *argv[]) {              //read cmd args w main params.
     vector<vector<double>> U(totalSteps, vector<double>(numParticles, 0.0));
     vector<vector<double>> V(totalSteps, vector<double>(numParticles, 0.0));
     vector<vector<double>> W(totalSteps, vector<double>(numParticles, 0.0));
-    vector<vector<double>> E_history(totalSteps, vector<double>(numParticles, 0.0));
-    vector<vector<double>> speed_history(totalSteps, vector<double>(numParticles, 0.0));
+    vector<vector<double>> E(totalSteps, vector<double>(numParticles, 0.0));
+    vector<vector<double>> speed(totalSteps, vector<double>(numParticles, 0.0));
     vector<vector<double>> xij(numParticles, vector<double>(numParticles, 0.0));
     vector<vector<double>> yij(numParticles, vector<double>(numParticles, 0.0));
     vector<vector<double>> zij(numParticles, vector<double>(numParticles, 0.0));
@@ -297,33 +287,33 @@ int main(int argc, char *argv[]) {              //read cmd args w main params.
             if (X[t+1][i] > Lx) {
                 X[t+1][i] = 2*Lx - X[t+1][i];
                 U[t+1][i] = -abs(U[t+1][i]);
-                cout << "boundary" << endl;
+              //  cout << "boundary" << endl;
             }
             if (Y[t+1][i] > Ly) {
                 Y[t+1][i] = 2*Ly - Y[t+1][i];
                 V[t+1][i] = -abs(V[t+1][i]);
-                cout << "boundary" << endl;
+                //cout << "boundary" << endl;
             }
             if (Z[t+1][i] > Lz) {
                 Z[t+1][i] = 2*Lz - Z[t+1][i];
                 W[t+1][i] = -abs(W[t+1][i]);
-                cout << "boundary" << endl;
+                //cout << "boundary" << endl;
             }
 
             if (X[t+1][i] < 0) {
                 X[t+1][i] = - X[t+1][i];
                 U[t+1][i] = abs(U[t+1][i]);
-                cout << "boundary" << endl;
+                //cout << "boundary" << endl;
             }
             if (Y[t+1][i] < 0) {
                 Y[t+1][i] = - Y[t+1][i];
                 V[t+1][i] = abs(V[t+1][i]);
-                cout << "boundary" << endl;
+                //cout << "boundary" << endl;
             }
             if (Z[t+1][i] < 0) {
                 Z[t+1][i] = - Z[t+1][i];
                 W[t+1][i] = abs(W[t+1][i]);
-                cout << "boundary" << endl;
+                //cout << "boundary" << endl;
             }
 
             }
@@ -333,8 +323,8 @@ int main(int argc, char *argv[]) {              //read cmd args w main params.
                 } else {
                     m = 10;
                 }
-                speed_history[t][i] = sqrt(U[t][i]*U[t][i] + V[t][i]*V[t][i] + W[t][i]*W[t][i]);
-                E_history[t][i] = 0.5 * m * speed_history[t][i] * speed_history[t][i];
+                speed[t+1][i] = sqrt(U[t][i]*U[t][i] + V[t][i]*V[t][i] + W[t][i]*W[t][i]);
+                E[t+1][i] = 0.5 * m * speed[t][i] * speed[t][i];
             }
     }
     
@@ -348,7 +338,7 @@ int main(int argc, char *argv[]) {              //read cmd args w main params.
                     << " u = " << U[t][i] 
                     << " v = " << V[t][i] 
                     << " w = " << W[t][i] 
-                    << " E = " << E_history[t][i] << "\n";
+                    << " E = " << E[t][i] << "\n";
         }
         outfile << "\n";
     }
@@ -363,29 +353,31 @@ int main(int argc, char *argv[]) {              //read cmd args w main params.
     for (int t = 0; t < totalSteps; t++) {
         energyfile << timestamps[t];
         for (int i = 0; i < numParticles; i++) {
-            energyfile << " " << E_history[t][i];
+            energyfile << " " << E[t][i];
         }
         energyfile << "\n";
     }
     energyfile.close();
 
-    ofstream posfile("positions.txt");
-     posfile << fixed << setprecision(10);
-    posfile << "runtime";
-    for (int i = 0; i < numParticles; i++) {
-        posfile << " x" << i << " y" << i;
-    }
-    posfile << "\n";
-    for (int i = 0; i < totalSteps; i++) {
-        posfile << timestamps[i];
-        for (int j = 0; j < numParticles; j++) {
-           
 
-            posfile << " " << X[i][j] << " " << Y[i][j];
+    
+    ofstream posfile("positions.txt");
+        posfile << "runtime";
+        for (int i = 0; i < numParticles; i++) {
+            posfile << " x" << i << " y" << i;
         }
         posfile << "\n";
-    }
-    posfile.close();
+
+        for (int t = 0; t < totalSteps; t++) {
+            posfile << defaultfloat << timestamps[t];
+            for (int i = 0; i < numParticles; i++) {
+                posfile << " " << fixed << setprecision(6) << X[t][i]
+                        << " " << fixed << setprecision(6) << Y[t][i];
+            }
+            posfile << "\n";
+        }
+        posfile.close();
+
 
 
     return 0;
