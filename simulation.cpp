@@ -21,6 +21,7 @@ int main(int argc, char *argv[]) {              //read cmd args w main params.
     bool timeProvided = false;
     bool nProvided = false;
     bool icRandomChosen = false;
+    bool tempProvided = false;
     
     map<string, map<string, vector<double> > > testCaseDict;
     testCaseDict["--ic-one"] = {
@@ -91,7 +92,8 @@ int main(int argc, char *argv[]) {              //read cmd args w main params.
     };
 
     
-    double runtime, percent_type1;
+    double runtime, percent_type1, temperature;
+    double kb = 0.8314459920816467;
     int numParticles;
     vector<double> x, y, z, u, v, w, type;
     while (i < argc) {
@@ -108,7 +110,10 @@ int main(int argc, char *argv[]) {              //read cmd args w main params.
         } else if (string(argv[i]) == "--N") {
             numParticles = stod(argv[i+1]);
             nProvided = true;
-
+        
+        } else if (string(argv[i]) == "--temp")  {
+            temperature = stod(argv[i+1]);
+            tempProvided = true;
         } else if (string(argv[i]) == "--percent-type1") {
             percent_type1 = stod(argv[i+1]);
         } else if (string(argv[i]) == "--ic-random") {
@@ -126,16 +131,32 @@ int main(int argc, char *argv[]) {              //read cmd args w main params.
             type = testCaseDict[key]["type"];
             testCase = true;
         } else if (string(argv[i]) == "--help") {
-            cout << "--help" << endl;
+            cout << "Allowed options:\n"
+                 << "--help                Print available options.\n"
+                 << "--Lx arg (=20)        x length (Angstroms)\n"
+                 << "--Ly arg (=20)        y length (Angstroms)\n"
+                 << "--Lz arg (=20)        z length (Angstroms)\n"
+                 << "--dt arg (=0.001)     Time-step\n"
+                 << "--T arg               Final time\n"
+                 << "--ic-one              Initial condition: one stationary particle\n"
+                 << "--ic-one-vel          Initial condition: one moving particle\n"
+                 << "--ic-two              Initial condition: two bouncing particles\n"
+                 << "--ic-two-pass1        Initial condition: two passing particles close\n"
+                 << "--ic-two-pass2        Initial condition: two passing particles close\n"
+                 << "--ic-two-pass3        Initial condition: two passing particles close, heavy\n"
+                 << "--percent-type1 arg (=10)  Percentage of type 1 particles with random IC\n"
+                 << "--ic-random           Number of particles to spawn with random IC\n"
+                 << "--temp arg            Temperature (degrees Kelvin)\n";
             exit(1);
         }
+        
         i++;
     }
     
     if ((testCase == true) || (icRandomChosen == true && nProvided == true && timeProvided == true)) {
-      //  cout << "Command Line input well-formatted, carrying on..." << endl;
+        cout << "Command Line input well-formatted, carrying on..." << endl;
     } else {
-      //  cout << "Command line input formatted incorrectly, exiting program." << endl;
+        cout << "Command line input formatted incorrectly, exiting program." << endl;
         exit(1);
     }
     
@@ -146,7 +167,7 @@ int main(int argc, char *argv[]) {              //read cmd args w main params.
     }
 
     
-    
+  
     vector<vector<double>> X(totalSteps, vector<double>(numParticles, 0.0));
     vector<vector<double>> Y(totalSteps, vector<double>(numParticles, 0.0));
     vector<vector<double>> Z(totalSteps, vector<double>(numParticles, 0.0));
@@ -232,6 +253,9 @@ int main(int argc, char *argv[]) {              //read cmd args w main params.
 
     int m;
     for (int t = 0; t < timestamps.size()-1; t++) {
+        if (t % 1000 == 0) {
+            cout << "Time: " << t*0.001 << endl;
+        }
         for (int i = 0; i < numParticles ; i++) {
             for (int j = i + 1; j < numParticles; j++) {
                 xij[i][j] = X[t][i] - X[t][j];
@@ -265,8 +289,6 @@ int main(int argc, char *argv[]) {              //read cmd args w main params.
             }
         }        
 
-        
-
         for (int i = 0; i < numParticles; i++) {
             if (type[i] == 0) {
                 m = 1;
@@ -277,6 +299,23 @@ int main(int argc, char *argv[]) {              //read cmd args w main params.
             U[t+1][i] = U[t][i] + dt * Fx[t][i] / m;
             V[t+1][i] = V[t][i] + dt * Fy[t][i] / m;
             W[t+1][i] = W[t][i] + dt * Fz[t][i] / m;
+
+            for (int i = 0; i < numParticles; i++) {
+                if (type[i] == 0) {
+                    m = 1;
+                } else {
+                    m = 10;
+                }
+                speed[t+1][i] = sqrt(U[t][i]*U[t][i] + V[t][i]*V[t][i] + W[t][i]*W[t][i]);
+                E[t+1][i] = 0.5 * m * speed[t][i] * speed[t][i];
+                if (tempProvided == true) {
+                    double BoltzTemp = (2/(3*kb))*E[t+1][i];
+                    double lambda = sqrt(temperature/BoltzTemp);
+                    U[t+1][i] = U[t+1][i] * lambda;
+                    V[t+1][i] = V[t+1][i] * lambda;
+                    W[t+1][i] = W[t+1][i] * lambda; 
+                }
+            }
 
             X[t+1][i] = X[t][i] + dt * U[t][i];
             Y[t+1][i] = Y[t][i] + dt * V[t][i];
@@ -316,16 +355,8 @@ int main(int argc, char *argv[]) {              //read cmd args w main params.
                 //cout << "boundary" << endl;
             }
 
-            }
-            for (int i = 0; i < numParticles; i++) {
-                if (type[i] == 0) {
-                    m = 1;
-                } else {
-                    m = 10;
-                }
-                speed[t+1][i] = sqrt(U[t][i]*U[t][i] + V[t][i]*V[t][i] + W[t][i]*W[t][i]);
-                E[t+1][i] = 0.5 * m * speed[t][i] * speed[t][i];
-            }
+        }
+            
     }
     
     ofstream outfile("output.txt");
