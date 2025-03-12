@@ -1,16 +1,27 @@
-compiler      = g++
-flags  = -std=c++11
-target   = simulation
-sources  = simulation.cpp
-objects  = $(SOURCES:.cpp=.o)
+CXX = g++
+CXXFLAGS = -std=c++11 
 
-all: md
+#give actual names instead of using default symbols for ease
+TARGET = simulation
+UNITTESTS = unit_tests
 
-md: $(sources)
-	$(compiler) $(flags) -o $(target) $(sources)
+SIM_SOURCES = simulation.cpp
+UNITTESTS_SOURCES = unit_tests.cpp
+
+all: $(TARGET)
+
+$(TARGET): $(SIM_SOURCES)
+	$(CXX) $(CXXFLAGS) -o $(TARGET) $(SIM_SOURCES)
+
+unittests: $(TARGET) $(UNITTESTS_SOURCES)
+	$(CXX) $(CXXFLAGS) -o $(UNITTESTS) $(UNITTESTS_SOURCES)
+	./$(UNITTESTS)
+
+
+.PHONY: clean
 
 clean:
-	rm -f $(target) $(objects) output.txt energy.txt positions.txt
+	rm -f $(TARGET) $(UNITTESTS) *.o *.txt
 
-.PHONY: all md clean
+
 
