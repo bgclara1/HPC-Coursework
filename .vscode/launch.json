@@ -1,27 +1,25 @@
 {
-    "version": "0.2.0",
-    "configurations": [
-      {
-        "name": "(gdb) Launch",
-        "type": "cppdbg",
-        "request": "launch",
-        "program": "${workspaceFolder}/simulation",
-        // "program": "${workspaceFolder}/Tests/Test 1/main-g",
-        "args": [],
-        "stopAtEntry": true,
-        "cwd": "${workspaceFolder}",
-        "environment": [],
-        "externalConsole": false,
-        "MIMode": "gdb",
-        "miDebuggerPath": "C:/MinGW/bin/gdb.exe",
-        "setupCommands": [
-          {
-            "description": "Enable pretty-printing for gdb",
-            "text": "-enable-pretty-printing",
-            "ignoreFailures": true
-          }
-        ]
-      }
-    ]
-  }
-  
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "LLDB Debugger",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/simulation",
+      // "program": "${workspaceFolder}/Tests/Test 1/main-g",
+      "args": [],
+      "stopAtEntry": true,
+      "cwd": "${workspaceFolder}",
+      "environment": [],
+      "externalConsole": false,
+      "MIMode": "lldb",
+      "setupCommands": [
+        {
+          "description": "Enable pretty-printing for gdb",
+          "text": "-enable-pretty-printing",
+          "ignoreFailures": true
+        }
+      ],
+    }
+  ]
+}

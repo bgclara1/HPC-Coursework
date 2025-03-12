@@ -6,6 +6,8 @@
 #include <cstdlib>
 #include <fstream>
 #include <iomanip>
+#include <cstdlib>
+#include <ctime>
 
 using namespace std;
 
@@ -22,7 +24,7 @@ int main(int argc, char *argv[]) {              //read cmd args w main params.
     
     map<string, map<string, vector<double> > > testCaseDict;
     testCaseDict["--ic-one"] = {
-        {"time", {0.2}},
+        {"runtime", {0.2}},
         {"numParticles", {1}},
         {"x", {10.0}},
         {"y", {10.0}},
@@ -33,7 +35,7 @@ int main(int argc, char *argv[]) {              //read cmd args w main params.
         {"type", {0}}
     };
     testCaseDict["--ic-one-vel"] = {
-        {"time", {20.0}},
+        {"runtime", {20.0}},
         {"numParticles", {1}},
         {"x", {10.0}},
         {"y", {10.0}},
@@ -44,7 +46,7 @@ int main(int argc, char *argv[]) {              //read cmd args w main params.
         {"type", {0}}
     };
     testCaseDict["--ic-two"] = {
-        {"time", {50}},
+        {"runtime", {50}},
         {"numParticles", {2}},
         {"x", {8.5, 11.5}},
         {"y", {10.0, 10.0}},
@@ -55,7 +57,7 @@ int main(int argc, char *argv[]) {              //read cmd args w main params.
         {"type", {0, 0}}
     };
     testCaseDict["--ic-two-pass1"] = {
-        {"time", {50.0}},
+        {"runtime", {50.0}},
         {"numParticles", {2}},
         {"x", {8.5, 11.5}},
         {"y", {11.5, 8.5}},
@@ -66,7 +68,7 @@ int main(int argc, char *argv[]) {              //read cmd args w main params.
         {"type", {0, 0}}
     };
     testCaseDict["--ic-two-pass2"] = {
-        {"time", {50.0}},
+        {"runtime", {50.0}},
         {"numParticles", {2}},
         {"x", {8.5, 11.5}},
         {"y", {11.3, 8.7}},
@@ -77,7 +79,7 @@ int main(int argc, char *argv[]) {              //read cmd args w main params.
         {"type", {0, 0}}
     };
     testCaseDict["--ic-two-pass3"] = {
-        {"time", {50.0}},
+        {"runtime", {50.0}},
         {"numParticles", {2}},
         {"x", {8.5, 11.5}},
         {"y", {11.3, 8.7}},
@@ -88,7 +90,7 @@ int main(int argc, char *argv[]) {              //read cmd args w main params.
         {"type", {1, 1}}
     };
     testCaseDict["--Claras-test-case"] = {
-        {"time", {5}},
+        {"runtime", {5}},
         {"numParticles", {3}},
         {"x", {8.5, 11.5, 10}},
         {"y", {11.3, 8.7, 20}},
@@ -99,7 +101,7 @@ int main(int argc, char *argv[]) {              //read cmd args w main params.
         {"type", {1, 1, 0}}
     };
     
-    double time;
+    double runtime, percent_type1;
     int numParticles;
     vector<double> x, y, z, u, v, w, type;
     while (i < argc) {
@@ -111,16 +113,19 @@ int main(int argc, char *argv[]) {              //read cmd args w main params.
         } else if (string(argv[i]) == "--Lz") {
             Lz = stod(argv[i+1]);
         } else if (string(argv[i]) == "--T") {
-            time = stod(argv[i+1]);
+            runtime = stod(argv[i+1]);
             timeProvided = true;
         } else if (string(argv[i]) == "--N") {
             numParticles = stod(argv[i+1]);
             nProvided = true;
+
+        } else if (string(argv[i]) == "--percent-type1") {
+            percent_type1 = stod(argv[i+1]);
         } else if (string(argv[i]) == "--ic-random") {
             icRandomChosen = true;
         } else if (testCaseDict.find(string(argv[i])) != testCaseDict.end()) {
             string key(argv[i]);
-            time = testCaseDict[key]["time"][0];
+            runtime = testCaseDict[key]["runtime"][0];
             numParticles = testCaseDict[key]["numParticles"][0];
             x = testCaseDict[key]["x"];
             y = testCaseDict[key]["y"];
@@ -144,11 +149,13 @@ int main(int argc, char *argv[]) {              //read cmd args w main params.
         exit(1);
     }
     
-    double totalSteps = (time / dt) + 1;
+    double totalSteps = (runtime / dt) + 1;
     vector<double> timestamps(totalSteps);
     for (int i = 0; i < totalSteps; i++) {
         timestamps[i] = i * dt;
     }
+
+    
     
     vector<vector<double>> X(totalSteps, vector<double>(numParticles, 0.0));
     vector<vector<double>> Y(totalSteps, vector<double>(numParticles, 0.0));
@@ -169,60 +176,106 @@ int main(int argc, char *argv[]) {              //read cmd args w main params.
     vector<vector<double>> Fy(totalSteps, vector<double>(numParticles, 0.0));
     vector<vector<double>> Fz(totalSteps, vector<double>(numParticles, 0.0));
 
-    for (int i = 0; i < numParticles; i++) {
-    // X at time 0 at position i = 0, 1 ...
-        X[0][i] = x[i];
-        Y[0][i] = y[i];
-        Z[0][i] = z[i];
-        U[0][i] = u[i];
-        V[0][i] = v[i];
-        W[0][i] = w[i];
+    
+
+    if (icRandomChosen) {
+        srand(time(0));  
+        for (int i = 0; i < numParticles; i++) {
+            double cx, cy, cz;
+            while (true) {
+                cx = ((double)rand() / RAND_MAX) * Lx;
+                cy = ((double)rand() / RAND_MAX) * Ly;
+                cz = ((double)rand() / RAND_MAX) * Lz;
+                bool valid = true;
+                for (int j = 0; j < i; j++) {
+                    double dx = cx - X[0][j];
+                    double dy = cy - Y[0][j];
+                    double dz = cz - Z[0][j];
+                    if (dx*dx + dy*dy + dz*dz < 0.25) {  // 0.5^2 = 0.25
+                        valid = false;
+                        break;
+                    }
+                }
+                if (valid)
+                    break;
+            }
+            X[0][i] = cx;
+            Y[0][i] = cy;
+            Z[0][i] = cz;
+            U[0][i] = ((double)rand() / RAND_MAX) - 0.5;
+            V[0][i] = ((double)rand() / RAND_MAX) - 0.5;
+            W[0][i] = ((double)rand() / RAND_MAX) - 0.5;
+
+            int numType1 = (int)ceil(numParticles * (percent_type1 / 100.0));
+            vector<int> particleTypes(numParticles, 0);
+            for (int i = 0; i < numType1; i++) {
+                particleTypes[i] = 1;
+            }
+            for (int i = 0; i < numParticles; i++) {
+                int j = rand() % numParticles;
+                int temp = particleTypes[i];
+                particleTypes[i] = particleTypes[j];
+                particleTypes[j] = temp;
+            }
+            type.resize(numParticles);
+            for (int i = 0; i < numParticles; i++) {
+                type[i] = particleTypes[i];
+            }
+
+
+        }
+
+    } else {
+        for (int i = 0; i < numParticles; i++) {
+            // X at time 0 at position i = 0, 1 ...
+            X[0][i] = x[i];
+            Y[0][i] = y[i];
+            Z[0][i] = z[i];
+            U[0][i] = u[i];
+            V[0][i] = v[i];
+            W[0][i] = w[i];
+        }
     }
-    
-    
+
     int epsilon[2][2] = { {3,15}, {15,60} };
     int sigma[2][2] = { {1,2}, {2,3} };
-    
 
     int m;
     for (int t = 0; t < timestamps.size()-1; t++) {
         for (int i = 0; i < numParticles ; i++) {
-            for (int j = 0; j < numParticles; j++) {
+            for (int j = i + 1; j < numParticles; j++) {
                 xij[i][j] = X[t][i] - X[t][j];
                 yij[i][j] = Y[t][i] - Y[t][j];
                 zij[i][j] = Z[t][i] - Z[t][j];
-                rij[i][j] = sqrt(xij[i][j]*xij[i][j] + yij[i][j]*yij[i][j] + zij[i][j]*zij[i][j]);
+                rij[i][j] = (xij[i][j]*xij[i][j] + yij[i][j]*yij[i][j] + zij[i][j]*zij[i][j]);   // r squared
+
                 int t1 = type[i];
                 int t2 = type[j];
                 int e = epsilon[t1][t2];
                 int s = sigma[t1][t2];
-                if (i!=j) {
-                    dPhi_dx[i][j] = -24 * e * xij[i][j] * ((2*pow(s,12)/pow(rij[i][j],14)) - (pow(s,6)/pow(rij[i][j],8)));
-                    dPhi_dy[i][j] = -24 * e * yij[i][j] * ((2*pow(s,12)/pow(rij[i][j],14)) - (pow(s,6)/pow(rij[i][j],8)));
-                    dPhi_dz[i][j] = -24 * e * zij[i][j] * ((2*pow(s,12)/pow(rij[i][j],14)) - (pow(s,6)/pow(rij[i][j],8)));
-                } else {
-                    dPhi_dx[i][j] = 0;
-                    dPhi_dy[i][j] = 0;
-                    dPhi_dz[i][j] = 0;
-                }   
-             //   cout << dPhi_dx[i][j] << endl;
+
+                double dPhi_coeff = -24*e*(  (2*pow(s,12)/pow(rij[i][j],7))   -   (pow(s,6)/pow(rij[i][j],4))   );
+
+                dPhi_dx[i][j] = xij[i][j] * dPhi_coeff;
+                dPhi_dy[i][j] = yij[i][j] * dPhi_coeff;
+                dPhi_dz[i][j] = zij[i][j] * dPhi_coeff;
             }
             
         }
-        cout << endl;
         for (int i = 0; i < numParticles ; i++) {
-            for (int j = 0; j < numParticles; j++) {
+            for (int j = i + 1; j < numParticles; j++) {
                 if (i!=j) {
                     Fx[t][i] -= dPhi_dx[i][j] ;
                     Fy[t][i] -= dPhi_dy[i][j];
                     Fz[t][i] -= dPhi_dz[i][j];
+                    Fx[t][j] += dPhi_dx[i][j] ;
+                    Fy[t][j] += dPhi_dy[i][j];
+                    Fz[t][j] += dPhi_dz[i][j];
                 }
-             //   cout << "time: " << t <<" i " << i << "j " << j <<"f: " << Fx[t][i] << endl;
-          //   cout << t*0.001 << " " << Fx[t][i] << endl;
             }
         }        
 
-
+        
 
         for (int i = 0; i < numParticles; i++) {
             if (type[i] == 0) {
@@ -230,8 +283,6 @@ int main(int argc, char *argv[]) {              //read cmd args w main params.
             } else {
                 m = 10;
             }
-
-         //  cout << t*0.001 << " " << U[t][i] << endl;
 
             U[t+1][i] = U[t][i] + dt * Fx[t][i] / m;
             V[t+1][i] = V[t][i] + dt * Fy[t][i] / m;
@@ -304,7 +355,7 @@ int main(int argc, char *argv[]) {              //read cmd args w main params.
     outfile.close();
     
     ofstream energyfile("energy.txt");
-    energyfile << "time";
+    energyfile << "runtime";
     for (int i = 0; i < numParticles; i++) {
         energyfile << " E" << i;
     }
@@ -320,7 +371,7 @@ int main(int argc, char *argv[]) {              //read cmd args w main params.
 
     ofstream posfile("positions.txt");
      posfile << fixed << setprecision(10);
-    posfile << "time";
+    posfile << "runtime";
     for (int i = 0; i < numParticles; i++) {
         posfile << " x" << i << " y" << i;
     }
