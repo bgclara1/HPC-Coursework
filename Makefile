@@ -17,6 +17,8 @@ unittests: $(TARGET) $(UNITTESTS_SOURCES)
 	$(CXX) $(CXXFLAGS) -o $(UNITTESTS) $(UNITTESTS_SOURCES)
 	./$(UNITTESTS)
 
+doc: Doxyfile
+	doxygen Doxyfile
 
 .PHONY: clean
 
