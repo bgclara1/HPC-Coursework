@@ -11,6 +11,7 @@
 
 using namespace std;
 
+    
 int main(int argc, char *argv[]) {              //read cmd args w main params.
     int i = 0;
     double Lx = 20;
@@ -253,7 +254,7 @@ int main(int argc, char *argv[]) {              //read cmd args w main params.
 
     int m;
     for (int t = 0; t < timestamps.size()-1; t++) {
-        if (t % 1000 == 0) {
+        if (t % 5000 == 0) {
             cout << "Time: " << t*0.001 << endl;
         }
         for (int i = 0; i < numParticles ; i++) {
