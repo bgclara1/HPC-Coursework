@@ -11,20 +11,85 @@
 
 using namespace std;
 
-    
-int main(int argc, char *argv[]) {              //read cmd args w main params.
-    int i = 0;
-    double Lx = 20;
-    double Ly = 20;
-    double Lz = 20;
-    double dt = 0.001;
-    bool testCase = false;
-    bool timeProvided = false;
-    bool nProvided = false;
-    bool icRandomChosen = false;
-    bool tempProvided = false;
-    
-    map<string, map<string, vector<double> > > testCaseDict;
+
+void variableInitialisation(int totalSteps, int numParticles,vector<vector<double>>& X,vector<vector<double>>& Y,
+    vector<vector<double>>& Z,vector<vector<double>>& U,vector<vector<double>>& V,vector<vector<double>>& W,
+    vector<vector<double>>& E,vector<vector<double>>& speed,vector<vector<double>>& xij,vector<vector<double>>& yij,
+    vector<vector<double>>& zij,vector<vector<double>>& rij,vector<vector<double>>& dPhi_dx,vector<vector<double>>& dPhi_dy,
+    vector<vector<double>>& dPhi_dz,vector<vector<double>>& Fx,vector<vector<double>>& Fy,vector<vector<double>>& Fz)
+{
+    X.resize(totalSteps, vector<double>(numParticles, 0.0));
+    Y.resize(totalSteps, vector<double>(numParticles, 0.0));
+    Z.resize(totalSteps, vector<double>(numParticles, 0.0));
+    U.resize(totalSteps, vector<double>(numParticles, 0.0));
+    V.resize(totalSteps, vector<double>(numParticles, 0.0));
+    W.resize(totalSteps, vector<double>(numParticles, 0.0));
+    E.resize(totalSteps, vector<double>(numParticles, 0.0));
+    speed.resize(totalSteps, vector<double>(numParticles, 0.0));
+
+    xij.resize(numParticles, vector<double>(numParticles, 0.0));
+    yij.resize(numParticles, vector<double>(numParticles, 0.0));
+    zij.resize(numParticles, vector<double>(numParticles, 0.0));
+    rij.resize(numParticles, vector<double>(numParticles, 0.0));
+    dPhi_dx.resize(numParticles, vector<double>(numParticles, 0.0));
+    dPhi_dy.resize(numParticles, vector<double>(numParticles, 0.0));
+    dPhi_dz.resize(numParticles, vector<double>(numParticles, 0.0));
+
+    Fx.resize(totalSteps, vector<double>(numParticles, 0.0));
+    Fy.resize(totalSteps, vector<double>(numParticles, 0.0));
+    Fz.resize(totalSteps, vector<double>(numParticles, 0.0));
+}
+
+void icRandom(int numParticles, double Lx, double Ly, double Lz, double percent_type1,
+    vector<vector<double>>& X,vector<vector<double>>& Y,vector<vector<double>>& Z,
+    vector<vector<double>>& U,vector<vector<double>>& V,vector<vector<double>>& W,
+    vector<double>& type)
+{
+    srand(time(0));
+
+    for (int i = 0; i < numParticles; i++) {
+        double cx, cy, cz;
+        while (true) {
+            cx = ((double)rand() / RAND_MAX) * Lx;
+            cy = ((double)rand() / RAND_MAX) * Ly;
+            cz = ((double)rand() / RAND_MAX) * Lz;
+            bool valid = true;
+          
+            for (int j = 0; j < i; j++) {
+                double dx = cx - X[0][j];
+                double dy = cy - Y[0][j];
+                double dz = cz - Z[0][j];
+                if (dx * dx + dy * dy + dz * dz < 0.25) {  // 0.5^2 = 0.25
+                    valid = false;
+                    break;
+                }
+            }
+            if (valid)
+                break;
+        }
+        X[0][i] = cx;
+        Y[0][i] = cy;
+        Z[0][i] = cz;
+        U[0][i] = ((double)rand() / RAND_MAX) - 0.5;
+        V[0][i] = ((double)rand() / RAND_MAX) - 0.5;
+        W[0][i] = ((double)rand() / RAND_MAX) - 0.5;
+    }
+    int numType1 = (int)ceil(numParticles * (percent_type1 / 100.0));
+    vector<double> particleTypes(numParticles, 0);
+    for (int i = 0; i < numType1; i++) {
+        particleTypes[i] = 1;
+    }
+    for (int i = 0; i < numParticles; i++) {
+        int j = rand() % numParticles;
+        int temp = particleTypes[i];
+        particleTypes[i] = particleTypes[j];
+        particleTypes[j] = temp;
+    }
+    type = particleTypes;
+}
+
+map<string, map<string, vector<double>>> getTestCases() {
+    map<string, map<string, vector<double>>> testCaseDict;
     testCaseDict["--ic-one"] = {
         {"runtime", {0.2}},
         {"numParticles", {1}},
@@ -91,7 +156,182 @@ int main(int argc, char *argv[]) {              //read cmd args w main params.
         {"w", {0.0, 0.0}},
         {"type", {1, 1}}
     };
+    return testCaseDict;
+}
 
+void updateVars(const vector<double>& timestamps, int numParticles, double dt,double Lx, double Ly, double Lz,
+                vector<double>& type,double temperature, bool tempProvided, double kb,const int epsilon[2][2], const int sigma[2][2],
+                vector<vector<double>>& X,vector<vector<double>>& Y,vector<vector<double>>& Z,
+                vector<vector<double>>& U,vector<vector<double>>& V,vector<vector<double>>& W,
+                vector<vector<double>>& E,vector<vector<double>>& speed,vector<vector<double>>& xij,
+                vector<vector<double>>& yij,vector<vector<double>>& zij,vector<vector<double>>& rij,
+                vector<vector<double>>& dPhi_dx,vector<vector<double>>& dPhi_dy,
+                vector<vector<double>>& dPhi_dz,vector<vector<double>>& Fx,
+                vector<vector<double>>& Fy,vector<vector<double>>& Fz)
+{
+    int totalSteps = timestamps.size();
+    for (int t = 0; t < totalSteps - 1; t++) {
+        if (t % 5000 == 0) {
+            cout << "Time: " << t * dt << endl;
+        }
+        for (int i = 0; i < numParticles; i++) {
+            for (int j = i + 1; j < numParticles; j++) {
+                xij[i][j] = X[t][i] - X[t][j];
+                yij[i][j] = Y[t][i] - Y[t][j];
+                zij[i][j] = Z[t][i] - Z[t][j];
+                rij[i][j] = xij[i][j]*xij[i][j] + yij[i][j]*yij[i][j] + zij[i][j]*zij[i][j]; // r squared
+
+                int t1 = type[i];
+                int t2 = type[j];
+                int e = epsilon[t1][t2];
+                int s = sigma[t1][t2];
+
+                double dPhi_coeff = -24 * e * ((2 * pow(s, 12) / pow(rij[i][j], 7)) - (pow(s, 6) / pow(rij[i][j], 4)));
+                dPhi_dx[i][j] = xij[i][j] * dPhi_coeff;
+                dPhi_dy[i][j] = yij[i][j] * dPhi_coeff;
+                dPhi_dz[i][j] = zij[i][j] * dPhi_coeff;
+            }
+        }
+        for (int i = 0; i < numParticles; i++) {
+            for (int j = i + 1; j < numParticles; j++) {
+                Fx[t][i] -= dPhi_dx[i][j];
+                Fy[t][i] -= dPhi_dy[i][j];
+                Fz[t][i] -= dPhi_dz[i][j];
+                Fx[t][j] += dPhi_dx[i][j];
+                Fy[t][j] += dPhi_dy[i][j];
+                Fz[t][j] += dPhi_dz[i][j];
+            }
+        }
+        for (int i = 0; i < numParticles; i++) {
+            int m = (type[i] == 0) ? 1 : 10;
+            U[t+1][i] = U[t][i] + dt * Fx[t][i] / m;
+            V[t+1][i] = V[t][i] + dt * Fy[t][i] / m;
+            W[t+1][i] = W[t][i] + dt * Fz[t][i] / m;
+        }
+        for (int i = 0; i < numParticles; i++) {
+            int m = (type[i] == 0) ? 1 : 10;
+            speed[t+1][i] = sqrt(U[t+1][i]*U[t+1][i] + V[t+1][i]*V[t+1][i] + W[t+1][i]*W[t+1][i]);
+            E[t+1][i] = 0.5 * m * speed[t+1][i] * speed[t+1][i];
+            if (tempProvided) {
+                double BoltzTemp = (2.0 / (3.0 * kb)) * E[t+1][i];
+                double lambda = sqrt(temperature / BoltzTemp);
+                U[t+1][i] *= lambda;
+                V[t+1][i] *= lambda;
+                W[t+1][i] *= lambda;
+            }
+        }
+        for (int i = 0; i < numParticles; i++) {
+            X[t+1][i] = X[t][i] + dt * U[t][i];
+            Y[t+1][i] = Y[t][i] + dt * V[t][i];
+            Z[t+1][i] = Z[t][i] + dt * W[t][i];
+            // Apply BCs
+            if (X[t+1][i] > Lx) {
+                X[t+1][i] = 2*Lx - X[t+1][i];
+                U[t+1][i] = -abs(U[t+1][i]);
+            }
+            if (Y[t+1][i] > Ly) {
+                Y[t+1][i] = 2*Ly - Y[t+1][i];
+                V[t+1][i] = -abs(V[t+1][i]);
+            }
+            if (Z[t+1][i] > Lz) {
+                Z[t+1][i] = 2*Lz - Z[t+1][i];
+                W[t+1][i] = -abs(W[t+1][i]);
+            }
+            if (X[t+1][i] < 0) {
+                X[t+1][i] = -X[t+1][i];
+                U[t+1][i] = abs(U[t+1][i]);
+            }
+            if (Y[t+1][i] < 0) {
+                Y[t+1][i] = -Y[t+1][i];
+                V[t+1][i] = abs(V[t+1][i]);
+            }
+            if (Z[t+1][i] < 0) {
+                Z[t+1][i] = -Z[t+1][i];
+                W[t+1][i] = abs(W[t+1][i]);
+            }
+        }
+    }
+}
+
+void writeToFiles(int totalSteps, int numParticles, const vector<double>& timestamps,const vector<vector<double>>& X, const vector<vector<double>>& Y,
+    const vector<vector<double>>& Z, const vector<vector<double>>& U,const vector<vector<double>>& V, const vector<vector<double>>& W,
+    const vector<vector<double>>& E)
+    {
+    ofstream outfile("output.txt");
+    for (int t = 0; t < totalSteps; t++) {
+    outfile << "Time step " << t << "\n";
+    for (int i = 0; i < numParticles; i++) {
+    outfile << "Particle " << i << ": x = " << X[t][i]
+        << " y = " << Y[t][i]
+        << " z = " << Z[t][i]
+        << " u = " << U[t][i]
+        << " v = " << V[t][i]
+        << " w = " << W[t][i]
+        << " E = " << E[t][i] << "\n";
+    }
+    outfile << "\n";
+    }
+    outfile.close();
+
+    ofstream energyfile("energy.txt");
+    energyfile << "runtime";
+    for (int i = 0; i < numParticles; i++) {
+    energyfile << " E" << i;
+    }
+    energyfile << "\n";
+    for (int t = 0; t < totalSteps; t++) {
+    energyfile << timestamps[t];
+    for (int i = 0; i < numParticles; i++) {
+    energyfile << " " << E[t][i];
+    }
+    energyfile << "\n";
+    }
+    energyfile.close();
+
+    ofstream posfile("positions.txt");
+    posfile << "runtime";
+    for (int i = 0; i < numParticles; i++) {
+    posfile << " x" << i << " y" << i;
+    }
+    posfile << "\n";
+    for (int t = 0; t < totalSteps; t++) {
+    posfile << defaultfloat << timestamps[t];
+    for (int i = 0; i < numParticles; i++) {
+    posfile << " " << fixed << setprecision(6) << X[t][i]
+        << " " << fixed << setprecision(6) << Y[t][i];
+    }
+    posfile << "\n";
+    }
+    posfile.close();
+    }
+
+
+
+/////////////////////////////////////////////////////
+////////////////////////////////////////////////////
+//
+//          M A I N   P R O G R A M
+//
+////////////////////////////////////////////////////
+////////////////////////////////////////////////////
+
+
+    
+int main(int argc, char *argv[]) {              //read cmd args w main params.
+    int i = 0;
+    double Lx = 20;
+    double Ly = 20;
+    double Lz = 20;
+    double dt = 0.001;
+    bool testCase = false;
+    bool timeProvided = false;
+    bool nProvided = false;
+    bool icRandomChosen = false;
+    bool tempProvided = false;
+
+    vector<vector<double>> X, Y, Z, U, V, W, E, speed,xij, yij, zij, rij,dPhi_dx, dPhi_dy, dPhi_dz,Fx, Fy, Fz;
+
+    map<string, map<string, vector<double>>> testCaseDict = getTestCases();
     
     double runtime, percent_type1, temperature;
     double kb = 0.8314459920816467;
@@ -168,79 +408,15 @@ int main(int argc, char *argv[]) {              //read cmd args w main params.
     }
 
     
-  
-    vector<vector<double>> X(totalSteps, vector<double>(numParticles, 0.0));
-    vector<vector<double>> Y(totalSteps, vector<double>(numParticles, 0.0));
-    vector<vector<double>> Z(totalSteps, vector<double>(numParticles, 0.0));
-    vector<vector<double>> U(totalSteps, vector<double>(numParticles, 0.0));
-    vector<vector<double>> V(totalSteps, vector<double>(numParticles, 0.0));
-    vector<vector<double>> W(totalSteps, vector<double>(numParticles, 0.0));
-    vector<vector<double>> E(totalSteps, vector<double>(numParticles, 0.0));
-    vector<vector<double>> speed(totalSteps, vector<double>(numParticles, 0.0));
-    vector<vector<double>> xij(numParticles, vector<double>(numParticles, 0.0));
-    vector<vector<double>> yij(numParticles, vector<double>(numParticles, 0.0));
-    vector<vector<double>> zij(numParticles, vector<double>(numParticles, 0.0));
-    vector<vector<double>> rij(numParticles, vector<double>(numParticles, 0.0));
-    vector<vector<double>> dPhi_dx(numParticles, vector<double>(numParticles, 0.0));
-    vector<vector<double>> dPhi_dy(numParticles, vector<double>(numParticles, 0.0));
-    vector<vector<double>> dPhi_dz(numParticles, vector<double>(numParticles, 0.0));
-    vector<vector<double>> Fx(totalSteps, vector<double>(numParticles, 0.0));
-    vector<vector<double>> Fy(totalSteps, vector<double>(numParticles, 0.0));
-    vector<vector<double>> Fz(totalSteps, vector<double>(numParticles, 0.0));
-
-    
+    variableInitialisation(totalSteps, numParticles,X, Y, Z,U, V, W,E, speed, xij, yij, zij, rij,
+        dPhi_dx, dPhi_dy, dPhi_dz, Fx, Fy, Fz);
 
     if (icRandomChosen) {
-        srand(time(0));  
-        for (int i = 0; i < numParticles; i++) {
-            double cx, cy, cz;
-            while (true) {
-                cx = ((double)rand() / RAND_MAX) * Lx;
-                cy = ((double)rand() / RAND_MAX) * Ly;
-                cz = ((double)rand() / RAND_MAX) * Lz;
-                bool valid = true;
-                for (int j = 0; j < i; j++) {
-                    double dx = cx - X[0][j];
-                    double dy = cy - Y[0][j];
-                    double dz = cz - Z[0][j];
-                    if (dx*dx + dy*dy + dz*dz < 0.25) {  // 0.5^2 = 0.25
-                        valid = false;
-                        break;
-                    }
-                }
-                if (valid)
-                    break;
-            }
-            X[0][i] = cx;
-            Y[0][i] = cy;
-            Z[0][i] = cz;
-            U[0][i] = ((double)rand() / RAND_MAX) - 0.5;
-            V[0][i] = ((double)rand() / RAND_MAX) - 0.5;
-            W[0][i] = ((double)rand() / RAND_MAX) - 0.5;
-
-            int numType1 = (int)ceil(numParticles * (percent_type1 / 100.0));
-            vector<int> particleTypes(numParticles, 0);
-            for (int i = 0; i < numType1; i++) {
-                particleTypes[i] = 1;
-            }
-            for (int i = 0; i < numParticles; i++) {
-                int j = rand() % numParticles;
-                int temp = particleTypes[i];
-                particleTypes[i] = particleTypes[j];
-                particleTypes[j] = temp;
-            }
-            type.resize(numParticles);
-            for (int i = 0; i < numParticles; i++) {
-                type[i] = particleTypes[i];
-            }
-
-
-        }
-
+        icRandom(numParticles, Lx, Ly, Lz, percent_type1,
+                                          X, Y, Z, U, V, W, type);
     } else {
         for (int i = 0; i < numParticles; i++) {
-            // X at time 0 at position i = 0, 1 ...
-            X[0][i] = x[i];
+            X[0][i] = x[i];             // the lower case x,y,z etc are in testCaseDict
             Y[0][i] = y[i];
             Z[0][i] = z[i];
             U[0][i] = u[i];
@@ -252,163 +428,14 @@ int main(int argc, char *argv[]) {              //read cmd args w main params.
     int epsilon[2][2] = { {3,15}, {15,60} };
     int sigma[2][2] = { {1,2}, {2,3} };
 
+    
     int m;
-    for (int t = 0; t < timestamps.size()-1; t++) {
-        if (t % 5000 == 0) {
-            cout << "Time: " << t*0.001 << endl;
-        }
-        for (int i = 0; i < numParticles ; i++) {
-            for (int j = i + 1; j < numParticles; j++) {
-                xij[i][j] = X[t][i] - X[t][j];
-                yij[i][j] = Y[t][i] - Y[t][j];
-                zij[i][j] = Z[t][i] - Z[t][j];
-                rij[i][j] = (xij[i][j]*xij[i][j] + yij[i][j]*yij[i][j] + zij[i][j]*zij[i][j]);   // r squared
 
-                int t1 = type[i];
-                int t2 = type[j];
-                int e = epsilon[t1][t2];
-                int s = sigma[t1][t2];
-
-                double dPhi_coeff = -24*e*(  (2*pow(s,12)/pow(rij[i][j],7))   -   (pow(s,6)/pow(rij[i][j],4))   );
-
-                dPhi_dx[i][j] = xij[i][j] * dPhi_coeff;
-                dPhi_dy[i][j] = yij[i][j] * dPhi_coeff;
-                dPhi_dz[i][j] = zij[i][j] * dPhi_coeff;
-            }
-            
-        }
-        for (int i = 0; i < numParticles ; i++) {
-            for (int j = i + 1; j < numParticles; j++) {
-                if (i!=j) {
-                    Fx[t][i] -= dPhi_dx[i][j] ;
-                    Fy[t][i] -= dPhi_dy[i][j];
-                    Fz[t][i] -= dPhi_dz[i][j];
-                    Fx[t][j] += dPhi_dx[i][j] ;
-                    Fy[t][j] += dPhi_dy[i][j];
-                    Fz[t][j] += dPhi_dz[i][j];
-                }
-            }
-        }        
-
-        for (int i = 0; i < numParticles; i++) {
-            if (type[i] == 0) {
-                m = 1;
-            } else {
-                m = 10;
-            }
-
-            U[t+1][i] = U[t][i] + dt * Fx[t][i] / m;
-            V[t+1][i] = V[t][i] + dt * Fy[t][i] / m;
-            W[t+1][i] = W[t][i] + dt * Fz[t][i] / m;
-
-            for (int i = 0; i < numParticles; i++) {
-                if (type[i] == 0) {
-                    m = 1;
-                } else {
-                    m = 10;
-                }
-                speed[t+1][i] = sqrt(U[t][i]*U[t][i] + V[t][i]*V[t][i] + W[t][i]*W[t][i]);
-                E[t+1][i] = 0.5 * m * speed[t][i] * speed[t][i];
-                if (tempProvided == true) {
-                    double BoltzTemp = (2/(3*kb))*E[t+1][i];
-                    double lambda = sqrt(temperature/BoltzTemp);
-                    U[t+1][i] = U[t+1][i] * lambda;
-                    V[t+1][i] = V[t+1][i] * lambda;
-                    W[t+1][i] = W[t+1][i] * lambda; 
-                }
-            }
-
-            X[t+1][i] = X[t][i] + dt * U[t][i];
-            Y[t+1][i] = Y[t][i] + dt * V[t][i];
-            Z[t+1][i] = Z[t][i] + dt * W[t][i];
-
-
-
-            if (X[t+1][i] > Lx) {
-                X[t+1][i] = 2*Lx - X[t+1][i];
-                U[t+1][i] = -abs(U[t+1][i]);
-              //  cout << "boundary" << endl;
-            }
-            if (Y[t+1][i] > Ly) {
-                Y[t+1][i] = 2*Ly - Y[t+1][i];
-                V[t+1][i] = -abs(V[t+1][i]);
-                //cout << "boundary" << endl;
-            }
-            if (Z[t+1][i] > Lz) {
-                Z[t+1][i] = 2*Lz - Z[t+1][i];
-                W[t+1][i] = -abs(W[t+1][i]);
-                //cout << "boundary" << endl;
-            }
-
-            if (X[t+1][i] < 0) {
-                X[t+1][i] = - X[t+1][i];
-                U[t+1][i] = abs(U[t+1][i]);
-                //cout << "boundary" << endl;
-            }
-            if (Y[t+1][i] < 0) {
-                Y[t+1][i] = - Y[t+1][i];
-                V[t+1][i] = abs(V[t+1][i]);
-                //cout << "boundary" << endl;
-            }
-            if (Z[t+1][i] < 0) {
-                Z[t+1][i] = - Z[t+1][i];
-                W[t+1][i] = abs(W[t+1][i]);
-                //cout << "boundary" << endl;
-            }
-
-        }
-            
-    }
+    updateVars(timestamps, numParticles, dt, Lx, Ly, Lz,type, temperature, tempProvided, kb,
+        epsilon, sigma,X, Y, Z,U, V, W,E, speed,xij, yij, zij, rij,dPhi_dx, dPhi_dy, dPhi_dz,Fx, Fy, Fz);            
     
-    ofstream outfile("output.txt");
-    for (int t = 0; t < totalSteps; t++) {
-        outfile << "Time step " << t << "\n";
-        for (int i = 0; i < numParticles; i++) {
-            outfile << "Particle " << i << ": x = " << X[t][i] 
-                    << " y = " << Y[t][i] 
-                    << " z = " << Z[t][i]
-                    << " u = " << U[t][i] 
-                    << " v = " << V[t][i] 
-                    << " w = " << W[t][i] 
-                    << " E = " << E[t][i] << "\n";
-        }
-        outfile << "\n";
-    }
-    outfile.close();
-    
-    ofstream energyfile("energy.txt");
-    energyfile << "runtime";
-    for (int i = 0; i < numParticles; i++) {
-        energyfile << " E" << i;
-    }
-    energyfile << "\n";
-    for (int t = 0; t < totalSteps; t++) {
-        energyfile << timestamps[t];
-        for (int i = 0; i < numParticles; i++) {
-            energyfile << " " << E[t][i];
-        }
-        energyfile << "\n";
-    }
-    energyfile.close();
 
-
-    
-    ofstream posfile("positions.txt");
-        posfile << "runtime";
-        for (int i = 0; i < numParticles; i++) {
-            posfile << " x" << i << " y" << i;
-        }
-        posfile << "\n";
-
-        for (int t = 0; t < totalSteps; t++) {
-            posfile << defaultfloat << timestamps[t];
-            for (int i = 0; i < numParticles; i++) {
-                posfile << " " << fixed << setprecision(6) << X[t][i]
-                        << " " << fixed << setprecision(6) << Y[t][i];
-            }
-            posfile << "\n";
-        }
-        posfile.close();
+    writeToFiles(totalSteps, numParticles, timestamps, X, Y, Z, U, V, W, E);
 
 
 
