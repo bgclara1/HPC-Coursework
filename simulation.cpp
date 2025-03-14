@@ -8,6 +8,8 @@
 #include <iomanip>
 #include <cstdlib>
 #include <ctime>
+#include <omp.h>
+#include <chrono>
 
 using namespace std;
 
@@ -160,98 +162,130 @@ map<string, map<string, vector<double>>> getTestCases() {
 }
 
 void updateVars(const vector<double>& timestamps, int numParticles, double dt,double Lx, double Ly, double Lz,
-                vector<double>& type,double temperature, bool tempProvided, double kb,const int epsilon[2][2], const int sigma[2][2],
-                vector<vector<double>>& X,vector<vector<double>>& Y,vector<vector<double>>& Z,
-                vector<vector<double>>& U,vector<vector<double>>& V,vector<vector<double>>& W,
-                vector<vector<double>>& E,vector<vector<double>>& speed,vector<vector<double>>& xij,
-                vector<vector<double>>& yij,vector<vector<double>>& zij,vector<vector<double>>& rij,
-                vector<vector<double>>& dPhi_dx,vector<vector<double>>& dPhi_dy,
-                vector<vector<double>>& dPhi_dz,vector<vector<double>>& Fx,
-                vector<vector<double>>& Fy,vector<vector<double>>& Fz)
-{
-    int totalSteps = timestamps.size();
-    for (int t = 0; t < totalSteps - 1; t++) {
-        if (t % 5000 == 0) {
-            cout << "Time: " << t * dt << endl;
-        }
-        for (int i = 0; i < numParticles; i++) {
-            for (int j = i + 1; j < numParticles; j++) {
-                xij[i][j] = X[t][i] - X[t][j];
-                yij[i][j] = Y[t][i] - Y[t][j];
-                zij[i][j] = Z[t][i] - Z[t][j];
-                rij[i][j] = xij[i][j]*xij[i][j] + yij[i][j]*yij[i][j] + zij[i][j]*zij[i][j]; // r squared
+    vector<double>& type,double temperature, bool tempProvided, double kb,const int epsilon[2][2], const int sigma[2][2],
+    vector<vector<double>>& X,vector<vector<double>>& Y,vector<vector<double>>& Z,vector<vector<double>>& U,vector<vector<double>>& V,
+    vector<vector<double>>& W,vector<vector<double>>& E,vector<vector<double>>& speed,vector<vector<double>>& xij,
+    vector<vector<double>>& yij,vector<vector<double>>& zij,vector<vector<double>>& rij,vector<vector<double>>& dPhi_dx,
+    vector<vector<double>>& dPhi_dy,vector<vector<double>>& dPhi_dz,vector<vector<double>>& Fx,vector<vector<double>>& Fy,vector<vector<double>>& Fz)
+    {
+        int totalSteps = timestamps.size();
+        #pragma omp parallel
+    {
+        #pragma omp single nowait
+        {
+            for (int t = 0; t < totalSteps - 1; t++) {
+                if (t % 5000 == 0) {
+                    #pragma omp critical
+                    { cout << "Time: " << t * dt << endl; }
+                }
+                
+                #pragma omp task
+                {
+                    for (int i = 0; i < numParticles; i++) {
+                        for (int j = i + 1; j < numParticles; j++) {
+                            xij[i][j] = X[t][i] - X[t][j];
+                            yij[i][j] = Y[t][i] - Y[t][j];
+                            zij[i][j] = Z[t][i] - Z[t][j];
+                            rij[i][j] = xij[i][j]*xij[i][j] + yij[i][j]*yij[i][j] + zij[i][j]*zij[i][j]; // r^2
 
-                int t1 = type[i];
-                int t2 = type[j];
-                int e = epsilon[t1][t2];
-                int s = sigma[t1][t2];
+                            int t1 = type[i];
+                            int t2 = type[j];
+                            int e = epsilon[t1][t2];
+                            int s = sigma[t1][t2];
+                            double dPhi_coeff = -24 * e * ((2 * pow(s, 12) / pow(rij[i][j], 7)) - (pow(s, 6) / pow(rij[i][j], 4)));
+                            dPhi_dx[i][j] = xij[i][j] * dPhi_coeff;
+                            dPhi_dy[i][j] = yij[i][j] * dPhi_coeff;
+                            dPhi_dz[i][j] = zij[i][j] * dPhi_coeff;
+                        }
+                    }
+                }
+                #pragma omp taskwait
 
-                double dPhi_coeff = -24 * e * ((2 * pow(s, 12) / pow(rij[i][j], 7)) - (pow(s, 6) / pow(rij[i][j], 4)));
-                dPhi_dx[i][j] = xij[i][j] * dPhi_coeff;
-                dPhi_dy[i][j] = yij[i][j] * dPhi_coeff;
-                dPhi_dz[i][j] = zij[i][j] * dPhi_coeff;
-            }
-        }
-        for (int i = 0; i < numParticles; i++) {
-            for (int j = i + 1; j < numParticles; j++) {
-                Fx[t][i] -= dPhi_dx[i][j];
-                Fy[t][i] -= dPhi_dy[i][j];
-                Fz[t][i] -= dPhi_dz[i][j];
-                Fx[t][j] += dPhi_dx[i][j];
-                Fy[t][j] += dPhi_dy[i][j];
-                Fz[t][j] += dPhi_dz[i][j];
-            }
-        }
-        for (int i = 0; i < numParticles; i++) {
-            int m = (type[i] == 0) ? 1 : 10;
-            U[t+1][i] = U[t][i] + dt * Fx[t][i] / m;
-            V[t+1][i] = V[t][i] + dt * Fy[t][i] / m;
-            W[t+1][i] = W[t][i] + dt * Fz[t][i] / m;
-        }
-        for (int i = 0; i < numParticles; i++) {
-            int m = (type[i] == 0) ? 1 : 10;
-            speed[t+1][i] = sqrt(U[t+1][i]*U[t+1][i] + V[t+1][i]*V[t+1][i] + W[t+1][i]*W[t+1][i]);
-            E[t+1][i] = 0.5 * m * speed[t+1][i] * speed[t+1][i];
-            if (tempProvided) {
-                double BoltzTemp = (2.0 / (3.0 * kb)) * E[t+1][i];
-                double lambda = sqrt(temperature / BoltzTemp);
-                U[t+1][i] *= lambda;
-                V[t+1][i] *= lambda;
-                W[t+1][i] *= lambda;
-            }
-        }
-        for (int i = 0; i < numParticles; i++) {
-            X[t+1][i] = X[t][i] + dt * U[t][i];
-            Y[t+1][i] = Y[t][i] + dt * V[t][i];
-            Z[t+1][i] = Z[t][i] + dt * W[t][i];
-            // Apply BCs
-            if (X[t+1][i] > Lx) {
-                X[t+1][i] = 2*Lx - X[t+1][i];
-                U[t+1][i] = -abs(U[t+1][i]);
-            }
-            if (Y[t+1][i] > Ly) {
-                Y[t+1][i] = 2*Ly - Y[t+1][i];
-                V[t+1][i] = -abs(V[t+1][i]);
-            }
-            if (Z[t+1][i] > Lz) {
-                Z[t+1][i] = 2*Lz - Z[t+1][i];
-                W[t+1][i] = -abs(W[t+1][i]);
-            }
-            if (X[t+1][i] < 0) {
-                X[t+1][i] = -X[t+1][i];
-                U[t+1][i] = abs(U[t+1][i]);
-            }
-            if (Y[t+1][i] < 0) {
-                Y[t+1][i] = -Y[t+1][i];
-                V[t+1][i] = abs(V[t+1][i]);
-            }
-            if (Z[t+1][i] < 0) {
-                Z[t+1][i] = -Z[t+1][i];
-                W[t+1][i] = abs(W[t+1][i]);
-            }
-        }
-    }
+                #pragma omp task
+                {
+                    for (int i = 0; i < numParticles; i++) {
+                        for (int j = i + 1; j < numParticles; j++) {
+                            #pragma omp critical
+                            {
+                                Fx[t][i] -= dPhi_dx[i][j];
+                                Fy[t][i] -= dPhi_dy[i][j];
+                                Fz[t][i] -= dPhi_dz[i][j];
+                                Fx[t][j] += dPhi_dx[i][j];
+                                Fy[t][j] += dPhi_dy[i][j];
+                                Fz[t][j] += dPhi_dz[i][j];
+                            }
+                        }
+                    }
+                }
+                #pragma omp taskwait
+
+                #pragma omp task
+                {
+                    for (int i = 0; i < numParticles; i++) {
+                        int m = (type[i] == 0) ? 1 : 10;
+                        U[t+1][i] = U[t][i] + dt * Fx[t][i] / m;
+                        V[t+1][i] = V[t][i] + dt * Fy[t][i] / m;
+                        W[t+1][i] = W[t][i] + dt * Fz[t][i] / m;
+                    }
+                }
+                #pragma omp taskwait
+
+                #pragma omp task
+                {
+                    for (int i = 0; i < numParticles; i++) {
+                        int m = (type[i] == 0) ? 1 : 10;
+                        speed[t+1][i] = sqrt(U[t+1][i]*U[t+1][i] + V[t+1][i]*V[t+1][i] + W[t+1][i]*W[t+1][i]);
+                        E[t+1][i] = 0.5 * m * speed[t+1][i] * speed[t+1][i];
+                        if (tempProvided) {
+                            double BoltzTemp = (2.0 / (3.0 * kb)) * E[t+1][i];
+                            double lambda = sqrt(temperature / BoltzTemp);
+                            U[t+1][i] *= lambda;
+                            V[t+1][i] *= lambda;
+                            W[t+1][i] *= lambda;
+                        }
+                    }
+                }
+                #pragma omp taskwait
+                #pragma omp task
+                {
+                    for (int i = 0; i < numParticles; i++) {
+                        X[t+1][i] = X[t][i] + dt * U[t][i];
+                        Y[t+1][i] = Y[t][i] + dt * V[t][i];
+                        Z[t+1][i] = Z[t][i] + dt * W[t][i];
+
+                        if (X[t+1][i] > Lx) {
+                            X[t+1][i] = 2 * Lx - X[t+1][i];
+                            U[t+1][i] = -abs(U[t+1][i]);
+                        }
+                        if (Y[t+1][i] > Ly) {
+                            Y[t+1][i] = 2 * Ly - Y[t+1][i];
+                            V[t+1][i] = -abs(V[t+1][i]);
+                        }
+                        if (Z[t+1][i] > Lz) {
+                            Z[t+1][i] = 2 * Lz - Z[t+1][i];
+                            W[t+1][i] = -abs(W[t+1][i]);
+                        }
+                        if (X[t+1][i] < 0) {
+                            X[t+1][i] = -X[t+1][i];
+                            U[t+1][i] = abs(U[t+1][i]);
+                        }
+                        if (Y[t+1][i] < 0) {
+                            Y[t+1][i] = -Y[t+1][i];
+                            V[t+1][i] = abs(V[t+1][i]);
+                        }
+                        if (Z[t+1][i] < 0) {
+                            Z[t+1][i] = -Z[t+1][i];
+                            W[t+1][i] = abs(W[t+1][i]);
+                        }
+                    }
+                }
+                #pragma omp taskwait
+            } 
+        } 
+    } 
 }
+
+
 
 void writeToFiles(int totalSteps, int numParticles, const vector<double>& timestamps,const vector<vector<double>>& X, const vector<vector<double>>& Y,
     const vector<vector<double>>& Z, const vector<vector<double>>& U,const vector<vector<double>>& V, const vector<vector<double>>& W,
@@ -318,6 +352,7 @@ void writeToFiles(int totalSteps, int numParticles, const vector<double>& timest
 
     
 int main(int argc, char *argv[]) {              //read cmd args w main params.
+    auto start = std::chrono::high_resolution_clock::now();
     int i = 0;
     double Lx = 20;
     double Ly = 20;
@@ -407,7 +442,6 @@ int main(int argc, char *argv[]) {              //read cmd args w main params.
         timestamps[i] = i * dt;
     }
 
-    
     variableInitialisation(totalSteps, numParticles,X, Y, Z,U, V, W,E, speed, xij, yij, zij, rij,
         dPhi_dx, dPhi_dy, dPhi_dz, Fx, Fy, Fz);
 
@@ -430,7 +464,6 @@ int main(int argc, char *argv[]) {              //read cmd args w main params.
 
     
     int m;
-
     updateVars(timestamps, numParticles, dt, Lx, Ly, Lz,type, temperature, tempProvided, kb,
         epsilon, sigma,X, Y, Z,U, V, W,E, speed,xij, yij, zij, rij,dPhi_dx, dPhi_dy, dPhi_dz,Fx, Fy, Fz);            
     
@@ -438,6 +471,10 @@ int main(int argc, char *argv[]) {              //read cmd args w main params.
     writeToFiles(totalSteps, numParticles, timestamps, X, Y, Z, U, V, W, E);
 
 
+    auto end = chrono::high_resolution_clock::now();
+    chrono::duration<double> duration = end - start; 
+    cout << "Runtime: " << duration.count() << " seconds" << endl;
+    
 
     return 0;
 }

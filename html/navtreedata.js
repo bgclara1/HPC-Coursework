@@ -24,22 +24,14 @@
 */
 var NAVTREE =
 [
-  [ "My Project", "index.html", [
-    [ "HPC-Coursework", "md__r_e_a_d_m_e.html", null ],
-    [ "Classes", "annotated.html", [
-      [ "Class List", "annotated.html", "annotated_dup" ],
-      [ "Class Index", "classes.html", null ],
-      [ "Class Members", "functions.html", [
-        [ "All", "functions.html", null ],
-        [ "Functions", "functions_func.html", null ]
-      ] ]
-    ] ]
+  [ "HPC Coursework", "index.html", [
+    [ "HPC-Coursework", "md__r_e_a_d_m_e.html", null ]
   ] ]
 ];
 
 var NAVTREEINDEX =
 [
-"annotated.html"
+"index.html"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronization';
