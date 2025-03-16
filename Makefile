@@ -1,5 +1,5 @@
 CXX = g++
-CXXFLAGS = -std=c++11 
+CXXFLAGS = -std=c++11 -O2 -ftree-vectorize
 
 #give actual names instead of using default symbols for ease
 TARGET = md
@@ -11,7 +11,7 @@ UNITTESTS_SOURCES = unit_tests.cpp
 all: $(TARGET)
 
 $(TARGET): $(SIM_SOURCES)
-	$(CXX) $(CXXFLAGS) -o $(TARGET) $(SIM_SOURCES)
+	$(CXX) $(CXXFLAGS) $(SIM_SOURCES) -o $(TARGET)
 
 unittests: $(TARGET) $(UNITTESTS_SOURCES)
 	$(CXX) $(CXXFLAGS) -o $(UNITTESTS) $(UNITTESTS_SOURCES)

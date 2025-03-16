@@ -179,7 +179,6 @@ double updateVars(double min_dist , int numParticles, double dt,double Lx, doubl
                 int t2 = type[j];
                 int e = epsilon[t1][t2];
                 int s = sigma[t1][t2];
-                
 
                 double rSquared = rij;
              //   double sigma6 = pow(s, 6)/pow(rSquared,3)/rSquared;
@@ -204,24 +203,25 @@ double updateVars(double min_dist , int numParticles, double dt,double Lx, doubl
                 Fz[j] += dPhi_dz;
             }
         }
+        #pragma omp parallel for
         for (int i = 0; i < numParticles; i++) {
             int m = (type[i] == 0) ? 1 : 10; // if true pick 1 else 10
             U[i] = U[i] + dt * Fx[i] / m;
             V[i] = V[i] + dt * Fy[i] / m;
             W[i] = W[i] + dt * Fz[i] / m;
         }
-        
+        double E_total = 0.0;
         for (int i = 0; i < numParticles; i++) {
             int m = (type[i] == 0) ? 1 : 10;
-            speed[i] = sqrt(U[i]*U[i] + V[i]*V[i] + W[i]*W[i]);
-            E[i] = 0.5 * m * speed[i] * speed[i];
-            if (tempProvided) {
-                double E_total;
-                for (int i = 0; i < numParticles; i++) {
-                    E_total += E[i];  
-                }
-                double BoltzTemp = (2.0 / (3.0 * kb)) * E_total;
-                double lambda = sqrt(temperature / BoltzTemp);
+            double speed = sqrt(U[i]*U[i] + V[i]*V[i] + W[i]*W[i]);
+            E[i] = 0.5 * m * speed * speed;
+            E_total += E[i];
+        }
+        if (tempProvided) {
+            double currentTemp = (2.0 / (3.0 * numParticles * kb)) * E_total;
+            double lambda = sqrt(temperature / currentTemp);
+            
+            for (int i = 0; i < numParticles; i++) {
                 U[i] *= lambda;
                 V[i] *= lambda;
                 W[i] *= lambda;
