@@ -1,14 +1,16 @@
+from io import StringIO
 import numpy as np
 import matplotlib.pyplot as plt
 
-data = np.loadtxt("energy.txt", skiprows=1)
+with open("energy.txt", "r") as f:
+    lines = [line for line in f if not line.startswith("runtime")]
+
+data = np.loadtxt(StringIO("".join(lines)))
 time = data[:, 0]
 E_history = data[:, 1:]
 
 plt.figure(figsize=(8,6))
-#for i in range(E_history.shape[1]):
-plt.plot(time, E_history[:, 0], label=f'Particle {0}')
-
+plt.plot(time, E_history[:, 0], label='Particle 0')
 plt.xlabel("Time")
 plt.ylabel("Kinetic Energy")
 plt.title("Kinetic Energy vs Time for Each Particle")
