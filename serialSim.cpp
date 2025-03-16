@@ -15,9 +15,7 @@ using namespace std;
 
 void variableInitialisation(int totalSteps, int numParticles,vector<double>& X,vector<double>& Y,
     vector<double>& Z,vector<double>& U,vector<double>& V,vector<double>& W,
-    vector<double>& E,vector<double>& speed,vector<vector<double>>& xij,vector<vector<double>>& yij,
-    vector<vector<double>>& zij,vector<vector<double>>& rij,vector<vector<double>>& dPhi_dx,vector<vector<double>>& dPhi_dy,
-    vector<vector<double>>& dPhi_dz,vector<double>& Fx,vector<double>& Fy,vector<double>& Fz)
+    vector<double>& E,vector<double>& speed,vector<double>& Fx,vector<double>& Fy,vector<double>& Fz)
 {
 
     X.resize(totalSteps * numParticles, 0.0);
@@ -28,15 +26,6 @@ void variableInitialisation(int totalSteps, int numParticles,vector<double>& X,v
     W.resize(totalSteps * numParticles, 0.0);
     E.resize(totalSteps * numParticles, 0.0);
     speed.resize(totalSteps * numParticles, 0.0);
-
-    xij.resize(numParticles, vector<double>(numParticles, 0.0));
-    yij.resize(numParticles, vector<double>(numParticles, 0.0));
-    zij.resize(numParticles, vector<double>(numParticles, 0.0));
-    rij.resize(numParticles, vector<double>(numParticles, 0.0));
-    dPhi_dx.resize(numParticles, vector<double>(numParticles, 0.0));
-    dPhi_dy.resize(numParticles, vector<double>(numParticles, 0.0));
-    dPhi_dz.resize(numParticles, vector<double>(numParticles, 0.0));
-
     Fx.resize(totalSteps * numParticles, 0.0);
     Fy.resize(totalSteps * numParticles, 0.0);
     Fz.resize(totalSteps * numParticles, 0.0);
@@ -164,30 +153,23 @@ map<string, map<string, vector<double>>> getTestCases() {
 double updateVars(double min_dist , int numParticles, double dt,double Lx, double Ly, double Lz,
     vector<double>& type,double temperature, bool tempProvided, double kb,const int epsilon[2][2], const int sigma[2][2],
     vector<double>& X,vector<double>& Y,vector<double>& Z,vector<double>& U,vector<double>& V,
-    vector<double>& W,vector<double>& E,vector<double>& speed,vector<vector<double>>& xij,
-    vector<vector<double>>& yij,vector<vector<double>>& zij,vector<vector<double>>& rij,vector<vector<double>>& dPhi_dx,
-    vector<vector<double>>& dPhi_dy,vector<vector<double>>& dPhi_dz,vector<double>& Fx,vector<double>& Fy,vector<double>& Fz) {
+    vector<double>& W,vector<double>& E,vector<double>& speed,double& xij,
+    double& yij, double& zij, double& rij,double& dPhi_dx,
+    double& dPhi_dy,double& dPhi_dz,vector<double>& Fx,vector<double>& Fy,vector<double>& Fz) {
 
        // cout << first << endl;
 
         for (int i = 0; i < numParticles; i++) {
             for (int j = i + 1; j < numParticles; j++) {
+
+                xij = X[i] - X[j];
+                yij = Y[i] - Y[j];
+                zij = Z[i] - Z[j];
+                rij = xij*xij + yij*yij + zij*zij; // r squared
+
                 
-                Fx[i] =0;
-                Fy[i] =0;
-                Fz[i] =0;
-                Fx[j] =0;
-                Fy[j] =0;
-                Fz[j] =0;
-
-                xij[i][j] = X[i] - X[j];
-                yij[i][j] = Y[i] - Y[j];
-                zij[i][j] = Z[i] - Z[j];
-                rij[i][j] = xij[i][j]*xij[i][j] + yij[i][j]*yij[i][j] + zij[i][j]*zij[i][j]; // r squared
-
-                double distance = sqrt(rij[i][j]);
-                if (distance < min_dist) {
-                    min_dist = distance;
+                if (rij < min_dist) {
+                    min_dist = rij;
                    // cout << min_dist << endl;
                 }
 
@@ -197,24 +179,27 @@ double updateVars(double min_dist , int numParticles, double dt,double Lx, doubl
                 int e = epsilon[t1][t2];
                 int s = sigma[t1][t2];
 
-                double rSquared = rij[i][j];
-                double sigma6 = pow(s, 6)/pow(rSquared,3)/rSquared;
-                double sigma12 = pow(s, 12) / pow(rij[i][j], 6)/rSquared;
+                double rSquared = rij;
+             //   double sigma6 = pow(s, 6)/pow(rSquared,3)/rSquared;
+                double sigma6 = (s*s*s*s*s*s)/(rSquared*rSquared*rSquared)/rSquared;
+
+              //  double sigma12 = pow(s, 12) / pow(rij, 6)/rSquared;
+                double sigma12 = sigma6*sigma6*rSquared;
 
                 double dPhi_coeff = - 24 * e * (2 * sigma12 - sigma6);
-                dPhi_dx[i][j] = xij[i][j] * dPhi_coeff;
-                dPhi_dy[i][j] = yij[i][j] * dPhi_coeff;
-                dPhi_dz[i][j] = zij[i][j] * dPhi_coeff;
+                dPhi_dx = xij * dPhi_coeff;
+                dPhi_dy = yij * dPhi_coeff;
+                dPhi_dz = zij * dPhi_coeff;
             }
         }
         for (int i = 0; i < numParticles; i++) {
             for (int j = i + 1; j < numParticles; j++) {
-                Fx[i] -= dPhi_dx[i][j];
-                Fy[i] -= dPhi_dy[i][j];
-                Fz[i] -= dPhi_dz[i][j];
-                Fx[j] += dPhi_dx[i][j];
-                Fy[j] += dPhi_dy[i][j];
-                Fz[j] += dPhi_dz[i][j];
+                Fx[i] -= dPhi_dx;
+                Fy[i] -= dPhi_dy;
+                Fz[i] -= dPhi_dz;
+                Fx[j] += dPhi_dx;
+                Fy[j] += dPhi_dy;
+                Fz[j] += dPhi_dz;
             }
         }
         for (int i = 0; i < numParticles; i++) {
@@ -365,8 +350,8 @@ int main(int argc, char *argv[]) {              //read cmd args w main params.
         remove("positions.txt");
     }
 
-    vector<vector<double>> xij, yij, zij, rij,dPhi_dx, dPhi_dy, dPhi_dz;
     vector<double> X, Y, Z, U, V, W, E, speed,Fx, Fy, Fz;
+    double xij,yij,zij,rij,dPhi_dx, dPhi_dy, dPhi_dz;
 
     map<string, map<string, vector<double>>> testCaseDict = getTestCases();
     
@@ -441,12 +426,12 @@ int main(int argc, char *argv[]) {              //read cmd args w main params.
     int totalSteps = (runtime / dt) + 1;
     vector<double> timestamps(totalSteps);
 
-    for (int i = 0; i <= totalSteps; i++) {
+    for (int i = 0; i < totalSteps; i++) {
         timestamps[i] = i * dt;
     }
 
-    variableInitialisation(totalSteps, numParticles,X, Y, Z,U, V, W,E, speed, xij, yij, zij, rij,
-        dPhi_dx, dPhi_dy, dPhi_dz, Fx, Fy, Fz);
+    variableInitialisation(totalSteps, numParticles,X, Y, Z,U, V, W,E, speed,
+      Fx, Fy, Fz);
 
     if (icRandomChosen) {
         icRandom(numParticles, Lx, Ly, Lz, percent_type1,
@@ -468,19 +453,24 @@ int main(int argc, char *argv[]) {              //read cmd args w main params.
 
     
     int m;
-    double min_dist = sqrt((X[1]-X[0])*(X[1]-X[0]) + (Y[1]-Y[0])*(Y[1]-Y[0]) + (Z[1]-Z[0])*(Z[1]-Z[0]));
+    double min_dist = ((X[1]-X[0])*(X[1]-X[0]) + (Y[1]-Y[0])*(Y[1]-Y[0]) + (Z[1]-Z[0])*(Z[1]-Z[0]));
 
-    for (int t = 0; t <= totalSteps ; t++) {
+    for (int t = 0; t < totalSteps ; t++) {
+        for (int i = 0; i < numParticles; i++) {
+            Fx[i] = 0.0;
+            Fy[i] = 0.0;
+            Fz[i] = 0.0;           
+        }
     //    cout << t << endl;
         min_dist = updateVars( min_dist, numParticles, dt, Lx, Ly, Lz,type, temperature, tempProvided, kb,
             epsilon, sigma,X, Y, Z,U, V, W,E, speed,xij, yij, zij, rij,dPhi_dx, dPhi_dy, dPhi_dz,Fx, Fy, Fz);      
-        if (t % 1 ==0 ){
+        if (t % 100 ==0 ){
             writeToFiles(t, numParticles, timestamps, X, Y, Z, U, V, W, E);    
         }
           
     }
 
-     cout << "minimum distance: " << min_dist  << endl;
+     cout << "minimum distance: " << sqrt(min_dist)  << endl;
 
 
     auto end = chrono::high_resolution_clock::now();
