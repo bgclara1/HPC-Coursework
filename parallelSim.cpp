@@ -9,6 +9,7 @@
 #include <cstdlib>
 #include <ctime>
 #include <chrono>
+#include <omp.h>
 
 using namespace std;
 
@@ -178,6 +179,7 @@ double updateVars(double min_dist , int numParticles, double dt,double Lx, doubl
                 int t2 = type[j];
                 int e = epsilon[t1][t2];
                 int s = sigma[t1][t2];
+                
 
                 double rSquared = rij;
              //   double sigma6 = pow(s, 6)/pow(rSquared,3)/rSquared;
@@ -208,18 +210,18 @@ double updateVars(double min_dist , int numParticles, double dt,double Lx, doubl
             V[i] = V[i] + dt * Fy[i] / m;
             W[i] = W[i] + dt * Fz[i] / m;
         }
-        double E_total = 0.0;
+        
         for (int i = 0; i < numParticles; i++) {
             int m = (type[i] == 0) ? 1 : 10;
-            double speed = sqrt(U[i]*U[i] + V[i]*V[i] + W[i]*W[i]);
-            E[i] = 0.5 * m * speed * speed;
-            E_total += E[i];
-        }
-        if (tempProvided) {
-            double currentTemp = (2.0 / (3.0 * numParticles * kb)) * E_total;
-            double lambda = sqrt(temperature / currentTemp);
-            
-            for (int i = 0; i < numParticles; i++) {
+            speed[i] = sqrt(U[i]*U[i] + V[i]*V[i] + W[i]*W[i]);
+            E[i] = 0.5 * m * speed[i] * speed[i];
+            if (tempProvided) {
+                double E_total;
+                for (int i = 0; i < numParticles; i++) {
+                    E_total += E[i];  
+                }
+                double BoltzTemp = (2.0 / (3.0 * kb)) * E_total;
+                double lambda = sqrt(temperature / BoltzTemp);
                 U[i] *= lambda;
                 V[i] *= lambda;
                 W[i] *= lambda;

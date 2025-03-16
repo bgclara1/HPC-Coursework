@@ -37,6 +37,6 @@ def update(frame):
         markers[i].set_data([x], [y])
     return markers
 
-ani = animation.FuncAnimation(fig, update, frames=range(0, len(data), 100),
+ani = animation.FuncAnimation(fig, update, frames=range(0, len(data), 1),
                               init_func=init, interval=20, blit=True)
 plt.show()
