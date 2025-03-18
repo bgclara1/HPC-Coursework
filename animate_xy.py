@@ -12,7 +12,7 @@ fig, ax = plt.subplots(figsize=(8, 6))
 
 markers = []
 for i in range(num_particles):
-    (marker,) = ax.plot([], [], 'o', markersize=8, label=f'Particle {i}')
+    (marker,) = ax.plot([], [], 'o', markersize=2, label=f'Particle {i}')
     markers.append(marker)
 
 all_x = data[:, 1::2]

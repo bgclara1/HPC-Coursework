@@ -13,6 +13,8 @@
 using namespace std;
 
 
+
+
 void variableInitialisation(int totalSteps, int numParticles,vector<double>& X,vector<double>& Y,
     vector<double>& Z,vector<double>& U,vector<double>& V,vector<double>& W,
     vector<double>& E,vector<double>& speed,vector<double>& Fx,vector<double>& Fy,vector<double>& Fz)
@@ -154,10 +156,10 @@ double updateVars(double min_dist , int numParticles, double dt,double Lx, doubl
     vector<double>& type,double temperature, bool tempProvided, double kb,const int epsilon[2][2], const int sigma[2][2],
     vector<double>& X,vector<double>& Y,vector<double>& Z,vector<double>& U,vector<double>& V,
     vector<double>& W,vector<double>& E,vector<double>& speed,double& xij,
-    double& yij, double& zij, double& rij,double& dPhi_dx,
-    double& dPhi_dy,double& dPhi_dz,vector<double>& Fx,vector<double>& Fy,vector<double>& Fz) {
+    double& yij, double& zij, double& rij,vector<double>& Fx,vector<double>& Fy,vector<double>& Fz, int s6_01, int s6_11) {
 
        // cout << first << endl;
+       double s6;
 
         for (int i = 0; i < numParticles; i++) {
             for (int j = i + 1; j < numParticles; j++) {
@@ -179,27 +181,24 @@ double updateVars(double min_dist , int numParticles, double dt,double Lx, doubl
                 int e = epsilon[t1][t2];
                 int s = sigma[t1][t2];
 
-                double rSquared = rij;
-             //   double sigma6 = pow(s, 6)/pow(rSquared,3)/rSquared;
-                double sigma6 = (s*s*s*s*s*s)/(rSquared*rSquared*rSquared)/rSquared;
+                if (s==1) {
+                    s6 = 1;
+                } else if (s==2) {
+                    s6 = s6_01;
+                } else {
+                    s6 = s6_11;
+                }
 
-              //  double sigma12 = pow(s, 12) / pow(rij, 6)/rSquared;
-                double sigma12 = sigma6*sigma6*rSquared;
+                double sigma6 = (s6)/(rij*rij*rij)/rij;
+                double sigma12 = sigma6*sigma6*rij;
 
                 double dPhi_coeff = - 24 * e * (2 * sigma12 - sigma6);
-                dPhi_dx = xij * dPhi_coeff;
-                dPhi_dy = yij * dPhi_coeff;
-                dPhi_dz = zij * dPhi_coeff;
-            }
-        }
-        for (int i = 0; i < numParticles; i++) {
-            for (int j = i + 1; j < numParticles; j++) {
-                Fx[i] -= dPhi_dx;
-                Fy[i] -= dPhi_dy;
-                Fz[i] -= dPhi_dz;
-                Fx[j] += dPhi_dx;
-                Fy[j] += dPhi_dy;
-                Fz[j] += dPhi_dz;
+                Fx[i] -= xij * dPhi_coeff;
+                Fy[i] -= yij * dPhi_coeff;
+                Fz[i] -= zij * dPhi_coeff;
+                Fx[j] += xij * dPhi_coeff;
+                Fy[j] += yij * dPhi_coeff;
+                Fz[j] += zij * dPhi_coeff;
             }
         }
         for (int i = 0; i < numParticles; i++) {
@@ -460,6 +459,9 @@ int main(int argc, char *argv[]) {              //read cmd args w main params.
     int m;
     double min_dist = ((X[1]-X[0])*(X[1]-X[0]) + (Y[1]-Y[0])*(Y[1]-Y[0]) + (Z[1]-Z[0])*(Z[1]-Z[0]));
 
+    int s6_01 = 2*2*2*2*2*2;
+    int s6_11 = 3*3*3*3*3*3;
+
     for (int t = 0; t < totalSteps ; t++) {
         for (int i = 0; i < numParticles; i++) {
             Fx[i] = 0.0;
@@ -468,10 +470,11 @@ int main(int argc, char *argv[]) {              //read cmd args w main params.
         }
     //    cout << t << endl;
         min_dist = updateVars( min_dist, numParticles, dt, Lx, Ly, Lz,type, temperature, tempProvided, kb,
-            epsilon, sigma,X, Y, Z,U, V, W,E, speed,xij, yij, zij, rij,dPhi_dx, dPhi_dy, dPhi_dz,Fx, Fy, Fz);      
+            epsilon, sigma,X, Y, Z,U, V, W,E, speed,xij, yij, zij, rij,Fx, Fy, Fz,s6_01,s6_11 );      
         if (t % 100 ==0 ){
             writeToFiles(t, numParticles, timestamps, X, Y, Z, U, V, W, E);    
         }
+
           
     }
      cout << "minimum distance: " << sqrt(min_dist)  << endl;

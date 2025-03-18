@@ -9,6 +9,7 @@
 #include <cstdlib>
 #include <ctime>
 #include <chrono>
+
 #include <omp.h>
 
 using namespace std;
@@ -158,20 +159,19 @@ double updateVars(double min_dist , int numParticles, double dt,double Lx, doubl
     double& yij, double& zij, double& rij,double& dPhi_dx,
     double& dPhi_dy,double& dPhi_dz,vector<double>& Fx,vector<double>& Fy,vector<double>& Fz) {
 
-       // cout << first << endl;
-
+        #pragma parallel for 
         for (int i = 0; i < numParticles; i++) {
+            #pragma parallel for
             for (int j = i + 1; j < numParticles; j++) {
 
                 xij = X[i] - X[j];
                 yij = Y[i] - Y[j];
                 zij = Z[i] - Z[j];
-                rij = xij*xij + yij*yij + zij*zij; // r squared
+                rij = xij*xij + yij*yij + zij*zij; 
 
                 
                 if (rij < min_dist) {
                     min_dist = rij;
-                   // cout << min_dist << endl;
                 }
 
                 
@@ -181,10 +181,7 @@ double updateVars(double min_dist , int numParticles, double dt,double Lx, doubl
                 int s = sigma[t1][t2];
 
                 double rSquared = rij;
-             //   double sigma6 = pow(s, 6)/pow(rSquared,3)/rSquared;
                 double sigma6 = (s*s*s*s*s*s)/(rSquared*rSquared*rSquared)/rSquared;
-
-              //  double sigma12 = pow(s, 12) / pow(rij, 6)/rSquared;
                 double sigma12 = sigma6*sigma6*rSquared;
 
                 double dPhi_coeff = - 24 * e * (2 * sigma12 - sigma6);
@@ -203,7 +200,7 @@ double updateVars(double min_dist , int numParticles, double dt,double Lx, doubl
                 Fz[j] += dPhi_dz;
             }
         }
-        #pragma omp parallel for
+        
         for (int i = 0; i < numParticles; i++) {
             int m = (type[i] == 0) ? 1 : 10; // if true pick 1 else 10
             U[i] = U[i] + dt * Fx[i] / m;
@@ -256,8 +253,8 @@ double updateVars(double min_dist , int numParticles, double dt,double Lx, doubl
                 Z[i] = -Z[i];
                 W[i] = abs(W[i]);
             }
-          //  cout << X[i] << endl;
         }
+
         return min_dist;
     }
 
@@ -462,15 +459,19 @@ int main(int argc, char *argv[]) {              //read cmd args w main params.
     int m;
     double min_dist = ((X[1]-X[0])*(X[1]-X[0]) + (Y[1]-Y[0])*(Y[1]-Y[0]) + (Z[1]-Z[0])*(Z[1]-Z[0]));
 
+
+    
     for (int t = 0; t < totalSteps ; t++) {
+        #pragma parallel for  // for 10,000 particles might aswell
         for (int i = 0; i < numParticles; i++) {
             Fx[i] = 0.0;
             Fy[i] = 0.0;
             Fz[i] = 0.0;           
         }
-    //    cout << t << endl;
+
         min_dist = updateVars( min_dist, numParticles, dt, Lx, Ly, Lz,type, temperature, tempProvided, kb,
             epsilon, sigma,X, Y, Z,U, V, W,E, speed,xij, yij, zij, rij,dPhi_dx, dPhi_dy, dPhi_dz,Fx, Fy, Fz);      
+
         if (t % 100 ==0 ){
             writeToFiles(t, numParticles, timestamps, X, Y, Z, U, V, W, E);    
         }
