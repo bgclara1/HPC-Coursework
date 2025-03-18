@@ -6,20 +6,17 @@
 #include <cstdlib>
 #include <fstream>
 #include <iomanip>
-#include <cstdlib>
 #include <ctime>
 #include <chrono>
 
 using namespace std;
 
-
-
-
-void variableInitialisation(int totalSteps, int numParticles,vector<double>& X,vector<double>& Y,
-    vector<double>& Z,vector<double>& U,vector<double>& V,vector<double>& W,
-    vector<double>& E,vector<double>& speed,vector<double>& Fx,vector<double>& Fy,vector<double>& Fz)
+void variableInitialisation(int totalSteps, int numParticles,
+    vector<double>& X, vector<double>& Y, vector<double>& Z,
+    vector<double>& U, vector<double>& V, vector<double>& W,
+    vector<double>& E, vector<double>& speed,
+    vector<double>& Fx, vector<double>& Fy, vector<double>& Fz)
 {
-
     X.resize(totalSteps * numParticles, 0.0);
     Y.resize(totalSteps * numParticles, 0.0);
     Z.resize(totalSteps * numParticles, 0.0);
@@ -34,8 +31,8 @@ void variableInitialisation(int totalSteps, int numParticles,vector<double>& X,v
 }
 
 void icRandom(int numParticles, double Lx, double Ly, double Lz, double percent_type1,
-    vector<double>& X,vector<double>& Y,vector<double>& Z,
-    vector<double>& U,vector<double>& V,vector<double>& W,
+    vector<double>& X, vector<double>& Y, vector<double>& Z,
+    vector<double>& U, vector<double>& V, vector<double>& W,
     vector<double>& type)
 {
     srand(time(0));
@@ -47,12 +44,11 @@ void icRandom(int numParticles, double Lx, double Ly, double Lz, double percent_
             cy = ((double)rand() / RAND_MAX) * Ly;
             cz = ((double)rand() / RAND_MAX) * Lz;
             bool valid = true;
-          
             for (int j = 0; j < i; j++) {
                 double dx = cx - X[j];
                 double dy = cy - Y[j];
                 double dz = cz - Z[j];
-                if (dx * dx + dy * dy + dz * dz < 0.25) {  // 0.5^2 = 0.25
+                if (dx * dx + dy * dy + dz * dz < 0.25) { // 0.5^2 = 0.25
                     valid = false;
                     break;
                 }
@@ -152,180 +148,122 @@ map<string, map<string, vector<double>>> getTestCases() {
     return testCaseDict;
 }
 
-double updateVars(double min_dist , int numParticles, double dt,double Lx, double Ly, double Lz,
-    vector<double>& type,double temperature, bool tempProvided, double kb,const int epsilon[2][2], const int sigma[2][2],
-    vector<double>& X,vector<double>& Y,vector<double>& Z,vector<double>& U,vector<double>& V,
-    vector<double>& W,vector<double>& E,vector<double>& speed,double& xij,
-    double& yij, double& zij, double& rij,vector<double>& Fx,vector<double>& Fy,vector<double>& Fz, int s6_01, int s6_11) {
+void updateVars(double min_dist, int numParticles, double dt, double Lx, double Ly, double Lz,
+    vector<double>& type, double temperature, bool tempProvided, double kb,
+    const int epsilon[2][2], const int sigma[2][2],
+    vector<double>& X, vector<double>& Y, vector<double>& Z,
+    vector<double>& U, vector<double>& V, vector<double>& W,
+    vector<double>& E, vector<double>& speed, double& xij,
+    double& yij, double& zij, double& rij, vector<double>& Fx,
+    vector<double>& Fy, vector<double>& Fz)
+{
+    double s6 = 0;
+    for (int i = 0; i < numParticles; i++) {
+        for (int j = i + 1; j < numParticles; j++) {
+            xij = X[i] - X[j];
+            yij = Y[i] - Y[j];
+            zij = Z[i] - Z[j];
+            rij = xij * xij + yij * yij + zij * zij; // r squared
 
-       // cout << first << endl;
-       double s6;
+            int t1 = type[i];
+            int t2 = type[j];
+            int e = epsilon[t1][t2];
+            int s = sigma[t1][t2];
 
-        for (int i = 0; i < numParticles; i++) {
-            for (int j = i + 1; j < numParticles; j++) {
+            double sigma6 = (s * s * s * s * s * s) / (rij * rij * rij) / rij;
+            double sigma12 = sigma6 * sigma6 * rij;
+            double coeff = -24 * e * (2 * sigma12 - sigma6);
 
-                xij = X[i] - X[j];
-                yij = Y[i] - Y[j];
-                zij = Z[i] - Z[j];
-                rij = xij*xij + yij*yij + zij*zij; // r squared
-
-                
-                if (rij < min_dist) {
-                    min_dist = rij;
-                   // cout << min_dist << endl;
-                }
-
-                
-                int t1 = type[i];
-                int t2 = type[j];
-                int e = epsilon[t1][t2];
-                int s = sigma[t1][t2];
-
-                if (s==1) {
-                    s6 = 1;
-                } else if (s==2) {
-                    s6 = s6_01;
-                } else {
-                    s6 = s6_11;
-                }
-
-                double sigma6 = (s6)/(rij*rij*rij)/rij;
-                double sigma12 = sigma6*sigma6*rij;
-
-                double dPhi_coeff = - 24 * e * (2 * sigma12 - sigma6);
-                Fx[i] -= xij * dPhi_coeff;
-                Fy[i] -= yij * dPhi_coeff;
-                Fz[i] -= zij * dPhi_coeff;
-                Fx[j] += xij * dPhi_coeff;
-                Fy[j] += yij * dPhi_coeff;
-                Fz[j] += zij * dPhi_coeff;
-            }
+            Fx[i] -= xij * coeff;
+            Fy[i] -= yij * coeff;
+            Fz[i] -= zij * coeff;
+            Fx[j] += xij * coeff;
+            Fy[j] += yij * coeff;
+            Fz[j] += zij * coeff;
         }
-        for (int i = 0; i < numParticles; i++) {
-            int m = (type[i] == 0) ? 1 : 10; // if true pick 1 else 10
-            U[i] = U[i] + dt * Fx[i] / m;
-            V[i] = V[i] + dt * Fy[i] / m;
-            W[i] = W[i] + dt * Fz[i] / m;
-        }
-        double E_total = 0.0;
-        for (int i = 0; i < numParticles; i++) {
-            int m = (type[i] == 0) ? 1 : 10;
-            double speed = sqrt(U[i]*U[i] + V[i]*V[i] + W[i]*W[i]);
-            E[i] = 0.5 * m * speed * speed;
-            E_total += E[i];
-        }
-        if (tempProvided) {
-            double currentTemp = (2.0 / (3.0 * numParticles * kb)) * E_total;
-            double lambda = sqrt(temperature / currentTemp);
-            
-            for (int i = 0; i < numParticles; i++) {
-                U[i] *= lambda;
-                V[i] *= lambda;
-                W[i] *= lambda;
-            }
-        }
-        for (int i = 0; i < numParticles; i++) {
-            X[i] = X[i] + dt * U[i];
-            Y[i] = Y[i] + dt * V[i];
-            Z[i] = Z[i] + dt * W[i];
-            
-            if (X[i] > Lx) {               // Apply BCs
-                X[i] = 2*Lx - X[i];
-                U[i] = -abs(U[i]);
-            }
-            if (Y[i] > Ly) {
-                Y[i] = 2*Ly - Y[i];
-                V[i] = -abs(V[i]);
-            }
-            if (Z[i] > Lz) {
-                Z[i] = 2*Lz - Z[i];
-                W[i] = -abs(W[i]);
-            }
-            if (X[i] < 0) {
-                X[i] = -X[i];
-                U[i] = abs(U[i]);
-            }
-            if (Y[i] < 0) {
-                Y[i] = -Y[i];
-                V[i] = abs(V[i]);
-            }
-            if (Z[i] < 0) {
-                Z[i] = -Z[i];
-                W[i] = abs(W[i]);
-            }
-          //  cout << X[i] << endl;
-        }
-        return min_dist;
     }
-
-
-
-
-    void writeToFiles(int t, int numParticles, const vector<double>& timestamps,
-        const vector<double>& X, const vector<double>& Y,
-        const vector<double>& Z, const vector<double>& U,
-        const vector<double>& V, const vector<double>& W,
-        const vector<double>& E) {
-
-        // Append to output.txt
-        ofstream outfile("output.txt", ios::app);
-        outfile << "Time step " << t << "\n";
+    for (int i = 0; i < numParticles; i++) {
+        int m = (type[i] == 0) ? 1 : 10; // if true pick 1 else 10
+        U[i] = U[i] + dt * Fx[i] / m;
+        V[i] = V[i] + dt * Fy[i] / m;
+        W[i] = W[i] + dt * Fz[i] / m;
+    }
+    double E_total = 0.0;
+    for (int i = 0; i < numParticles; i++) {
+        int m = (type[i] == 0) ? 1 : 10;
+        double speed2 = (U[i] * U[i] + V[i] * V[i] + W[i] * W[i]);
+        E[i] = 0.5 * m * speed2;
+        E_total += E[i];
+    }
+    if (tempProvided) {
+        double currentTemp = (2.0 / (3.0 * numParticles * kb)) * E_total;
+        double lambda = sqrt(temperature / currentTemp);
         for (int i = 0; i < numParticles; i++) {
+            U[i] *= lambda;
+            V[i] *= lambda;
+            W[i] *= lambda;
+        }
+    }
+    for (int i = 0; i < numParticles; i++) {
+        X[i] = X[i] + dt * U[i];
+        Y[i] = Y[i] + dt * V[i];
+        Z[i] = Z[i] + dt * W[i];
+        if (X[i] > Lx) { // Apply BCs
+            X[i] = 2 * Lx - X[i];
+            U[i] = -abs(U[i]);
+        }
+        if (Y[i] > Ly) {
+            Y[i] = 2 * Ly - Y[i];
+            V[i] = -abs(V[i]);
+        }
+        if (Z[i] > Lz) {
+            Z[i] = 2 * Lz - Z[i];
+            W[i] = -abs(W[i]);
+        }
+        if (X[i] < 0) {
+            X[i] = -X[i];
+            U[i] = abs(U[i]);
+        }
+        if (Y[i] < 0) {
+            Y[i] = -Y[i];
+            V[i] = abs(V[i]);
+        }
+        if (Z[i] < 0) {
+            Z[i] = -Z[i];
+            W[i] = abs(W[i]);
+        }
+    }
+}
+
+void writeToFiles(int t, int numParticles, const vector<double>& timestamps,
+    const vector<double>& X, const vector<double>& Y,
+    const vector<double>& Z, const vector<double>& U,
+    const vector<double>& V, const vector<double>& W,
+    const vector<double>& E)
+{
+    // Append to output.txt
+    ofstream outfile("output.txt", ios::app);
+    outfile << "Time step " << t << "\n";
+    for (int i = 0; i < numParticles; i++) {
         outfile << "Particle " << i << ": x = " << X[i]
-            << " y = " << Y[i]
-            << " z = " << Z[i]
-            << " u = " << U[i]
-            << " v = " << V[i]
-            << " w = " << W[i]
-            << " E = " << E[i] << "\n";
-        }
-        outfile << "\n";
-        outfile.close();
+                << " y = " << Y[i]
+                << " z = " << Z[i]
+                << " u = " << U[i]
+                << " v = " << V[i]
+                << " w = " << W[i]
+                << " E = " << E[i] << "\n";
+    }
+    outfile << "\n";
+    outfile.close();
+}
 
-        // Append to energy.txt
-        ofstream energyfile("energy.txt", ios::app);
-        energyfile << "runtime";
-        for (int i = 0; i < numParticles; i++) {
-        energyfile << " E" << i;
-        }
-        energyfile << "\n";
-        energyfile << timestamps[t];
-        for (int i = 0; i < numParticles; i++) {
-        energyfile << " " << E[i];
-        }
-        energyfile << "\n";
-        energyfile.close();
-
-        // Append to positions.txt
-        ofstream posfile("positions.txt", ios::app);
-        posfile << "runtime";
-        for (int i = 0; i < numParticles; i++) {
-        posfile << " x" << i << " y" << i;
-        }
-        posfile << "\n";
-        posfile << defaultfloat << timestamps[t];
-        for (int i = 0; i < numParticles; i++) {
-        posfile << " " << fixed << setprecision(6) << X[i]
-            << " " << fixed << setprecision(6) << Y[i];
-        }
-        posfile << "\n";
-        posfile.close();
-        }
-
-
-
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////
 //
-//          M A I N   P R O G R A M
+//                              MAIN PROGRAM
 //
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////////
 
-
-    
-int main(int argc, char *argv[]) {              //read cmd args w main params.
+int main(int argc, char *argv[]) { // read cmd args w main params.
     auto start = chrono::high_resolution_clock::now();
     int i = 0;
     double Lx = 20;
@@ -338,7 +276,7 @@ int main(int argc, char *argv[]) {              //read cmd args w main params.
     bool icRandomChosen = false;
     bool tempProvided = false;
 
-    ifstream file1("output.txt");       // incase make clean isnt run
+    ifstream file1("output.txt"); // in case make clean isn't run
     if (file1) {
         file1.close();
         remove("output.txt");
@@ -354,35 +292,32 @@ int main(int argc, char *argv[]) {              //read cmd args w main params.
         remove("positions.txt");
     }
 
-    vector<double> X, Y, Z, U, V, W, E, speed,Fx, Fy, Fz;
-    double xij,yij,zij,rij,dPhi_dx, dPhi_dy, dPhi_dz;
+    vector<double> X, Y, Z, U, V, W, E, speed, Fx, Fy, Fz;
+    double xij, yij, zij, rij, dPhi_dx, dPhi_dy, dPhi_dz;
 
     map<string, map<string, vector<double>>> testCaseDict = getTestCases();
-    
     double runtime, percent_type1, temperature;
     double kb = 0.8314459920816467;
     int numParticles;
     vector<double> x, y, z, u, v, w, type;
     while (i < argc) {
-      //  cout << "Argument " << i + 1 << ": " << argv[i] << endl;
         if (string(argv[i]) == "--Lx") {
-            Lx = stod(argv[i+1]);
+            Lx = stod(argv[i + 1]);
         } else if (string(argv[i]) == "--Ly") {
-            Ly = stod(argv[i+1]);
+            Ly = stod(argv[i + 1]);
         } else if (string(argv[i]) == "--Lz") {
-            Lz = stod(argv[i+1]);
+            Lz = stod(argv[i + 1]);
         } else if (string(argv[i]) == "--T") {
-            runtime = stod(argv[i+1]);
+            runtime = stod(argv[i + 1]);
             timeProvided = true;
         } else if (string(argv[i]) == "--N") {
-            numParticles = stod(argv[i+1]);
+            numParticles = stoi(argv[i + 1]);
             nProvided = true;
-        
-        } else if (string(argv[i]) == "--temp")  {
-            temperature = stod(argv[i+1]);
+        } else if (string(argv[i]) == "--temp") {
+            temperature = stod(argv[i + 1]);
             tempProvided = true;
         } else if (string(argv[i]) == "--percent-type1") {
-            percent_type1 = stod(argv[i+1]);
+            percent_type1 = stod(argv[i + 1]);
         } else if (string(argv[i]) == "--ic-random") {
             icRandomChosen = true;
         } else if (testCaseDict.find(string(argv[i])) != testCaseDict.end()) {
@@ -416,84 +351,65 @@ int main(int argc, char *argv[]) {              //read cmd args w main params.
                  << "--temp arg            Temperature (degrees Kelvin)\n";
             exit(1);
         }
-        
         i++;
     }
-    
+
     if ((testCase == true) || (icRandomChosen == true && nProvided == true && timeProvided == true)) {
         cout << "Command Line input well-formatted, carrying on..." << endl;
     } else {
         cout << "Command line input formatted incorrectly, exiting program." << endl;
         exit(1);
     }
-    
+
     int totalSteps = (runtime / dt) + 1;
     vector<double> timestamps(totalSteps);
-
     for (int i = 0; i < totalSteps; i++) {
         timestamps[i] = i * dt;
     }
 
-    variableInitialisation(totalSteps, numParticles,X, Y, Z,U, V, W,E, speed,
-      Fx, Fy, Fz);
+    variableInitialisation(totalSteps, numParticles, X, Y, Z, U, V, W, E, speed, Fx, Fy, Fz);
 
     if (icRandomChosen) {
-        icRandom(numParticles, Lx, Ly, Lz, percent_type1,
-                                          X, Y, Z, U, V, W, type);
+        icRandom(numParticles, Lx, Ly, Lz, percent_type1, X, Y, Z, U, V, W, type);
     } else {
         for (int i = 0; i < numParticles; i++) {
-            X[i] = x[i];             // the lower case x,y,z etc are in testCaseDict
+            X[i] = x[i]; // the lower case x,y,z etc are in testCaseDict
             Y[i] = y[i];
             Z[i] = z[i];
             U[i] = u[i];
             V[i] = v[i];
             W[i] = w[i];
-         //   cout << X[i] << endl;
         }
     }
 
     int epsilon[2][2] = { {3,15}, {15,60} };
     int sigma[2][2] = { {1,2}, {2,3} };
 
-    
-    int m;
-    double min_dist = ((X[1]-X[0])*(X[1]-X[0]) + (Y[1]-Y[0])*(Y[1]-Y[0]) + (Z[1]-Z[0])*(Z[1]-Z[0]));
+    double min_dist = ((X[1] - X[0]) * (X[1] - X[0]) +
+                       (Y[1] - Y[0]) * (Y[1] - Y[0]) +
+                       (Z[1] - Z[0]) * (Z[1] - Z[0]));
 
-    int s6_01 = 2*2*2*2*2*2;
-    int s6_11 = 3*3*3*3*3*3;
-
-    for (int t = 0; t < totalSteps ; t++) {
+    for (int t = 0; t < totalSteps; t++) {
         for (int i = 0; i < numParticles; i++) {
             Fx[i] = 0.0;
             Fy[i] = 0.0;
-            Fz[i] = 0.0;           
+            Fz[i] = 0.0;
         }
-    //    cout << t << endl;
-        min_dist = updateVars( min_dist, numParticles, dt, Lx, Ly, Lz,type, temperature, tempProvided, kb,
-            epsilon, sigma,X, Y, Z,U, V, W,E, speed,xij, yij, zij, rij,Fx, Fy, Fz,s6_01,s6_11 );      
-        if (t % 100 ==0 ){
-            writeToFiles(t, numParticles, timestamps, X, Y, Z, U, V, W, E);    
+        updateVars(min_dist, numParticles, dt, Lx, Ly, Lz, type, temperature,
+                   tempProvided, kb, epsilon, sigma, X, Y, Z, U, V, W, E, speed,
+                   xij, yij, zij, rij, Fx, Fy, Fz);
+        if (t % 100 == 0) {
+            // writeToFiles(t, numParticles, timestamps, X, Y, Z, U, V, W, E);
+            ofstream outfile("output.txt", ios::app);
+            outfile << "Time step " << t << "\n";
+            outfile.close();
         }
-
-          
     }
-     cout << "minimum distance: " << sqrt(min_dist)  << endl;
-
+    cout << "minimum distance: " << sqrt(min_dist) << endl;
 
     auto end = chrono::high_resolution_clock::now();
-    chrono::duration<double> duration = end - start; 
+    chrono::duration<double> duration = end - start;
     cout << "Runtime: " << duration.count() << " seconds" << endl;
-    
 
     return 0;
 }
-
-
-
-
-
-
-
-
-
-
