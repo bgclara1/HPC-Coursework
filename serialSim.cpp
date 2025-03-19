@@ -80,7 +80,7 @@ void icRandom(int numParticles, double Lx, double Ly, double Lz, double percent_
 map<string, map<string, vector<double>>> getTestCases() {
     map<string, map<string, vector<double>>> testCaseDict;
     testCaseDict["--ic-one"] = {
-        {"runtime", {0.2}},
+        {"runtime", {1}},
         {"numParticles", {1}},
         {"x", {10.0}},
         {"y", {10.0}},
@@ -255,7 +255,38 @@ void writeToFiles(int t, int numParticles, const vector<double>& timestamps,
     }
     outfile << "\n";
     outfile.close();
-}
+
+    // Append to energy.txt
+    ofstream energyfile("energy.txt", ios::app);
+    energyfile << "runtime";
+    for (int i = 0; i < numParticles; i++) {
+    energyfile << " E" << i;
+    }
+    energyfile << "\n";
+    energyfile << timestamps[t];
+    for (int i = 0; i < numParticles; i++) {
+    energyfile << " " << E[i];
+    }
+    energyfile << "\n";
+    energyfile.close();
+
+    // Append to positions.txt
+    ofstream posfile("positions.txt", ios::app);
+    posfile << "runtime";
+    for (int i = 0; i < numParticles; i++) {
+    posfile << " x" << i << " y" << i;
+    }
+    posfile << "\n";
+    posfile << defaultfloat << timestamps[t];
+    for (int i = 0; i < numParticles; i++) {
+    posfile << " " << fixed << setprecision(6) << X[i]
+    << " " << fixed << setprecision(6) << Y[i];
+    }
+    posfile << "\n";
+    posfile.close();
+    }
+    
+
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -399,10 +430,10 @@ int main(int argc, char *argv[]) { // read cmd args w main params.
                    tempProvided, kb, epsilon, sigma, X, Y, Z, U, V, W, E, speed,
                    xij, yij, zij, rij, Fx, Fy, Fz);
         if (t % 100 == 0) {
-            // writeToFiles(t, numParticles, timestamps, X, Y, Z, U, V, W, E);
-            ofstream outfile("output.txt", ios::app);
-            outfile << "Time step " << t << "\n";
-            outfile.close();
+            writeToFiles(t, numParticles, timestamps, X, Y, Z, U, V, W, E);
+            // ofstream outfile("output.txt", ios::app);
+            // outfile << "Time step " << t << "\n";
+            // outfile.close();
         }
     }
     cout << "minimum distance: " << sqrt(min_dist) << endl;

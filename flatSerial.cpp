@@ -8,11 +8,10 @@
 #include <iomanip>
 #include <ctime>
 #include <chrono>
-#include <omp.h>
 
 using namespace std;
 
-// Precomputed s^6 for s=1,2,3 (index 0 is unused)
+// Global constant lookup table for s^6 (index 0 unused)
 const double s6_table[4] = {0.0, 1.0, 64.0, 729.0};
 
 void variableInitialisation(int totalSteps, int numParticles,
@@ -22,17 +21,17 @@ void variableInitialisation(int totalSteps, int numParticles,
     vector<double>& Fx, vector<double>& Fy, vector<double>& Fz)
 {
     int size = totalSteps * numParticles;
-    X.assign(size, 0.0);
-    Y.assign(size, 0.0);
-    Z.assign(size, 0.0);
-    U.assign(size, 0.0);
-    V.assign(size, 0.0);
-    W.assign(size, 0.0);
-    E.assign(size, 0.0);
-    speed.assign(size, 0.0);
-    Fx.assign(size, 0.0);
-    Fy.assign(size, 0.0);
-    Fz.assign(size, 0.0);
+    X.resize(size, 0.0);
+    Y.resize(size, 0.0);
+    Z.resize(size, 0.0);
+    U.resize(size, 0.0);
+    V.resize(size, 0.0);
+    W.resize(size, 0.0);
+    E.resize(size, 0.0);
+    speed.resize(size, 0.0);
+    Fx.resize(size, 0.0);
+    Fy.resize(size, 0.0);
+    Fz.resize(size, 0.0);
 }
 
 void icRandom(int numParticles, double Lx, double Ly, double Lz, double percent_type1,
@@ -40,7 +39,7 @@ void icRandom(int numParticles, double Lx, double Ly, double Lz, double percent_
     vector<double>& U, vector<double>& V, vector<double>& W,
     vector<double>& type)
 {
-    srand(static_cast<unsigned int>(time(0)));
+    srand(time(0));
     for (int i = 0; i < numParticles; i++) {
         double cx, cy, cz;
         while (true) {
@@ -52,7 +51,7 @@ void icRandom(int numParticles, double Lx, double Ly, double Lz, double percent_
                 double dx = cx - X[j];
                 double dy = cy - Y[j];
                 double dz = cz - Z[j];
-                if (dx * dx + dy * dy + dz * dz < 0.25) {  // 0.5^2 = 0.25
+                if (dx * dx + dy * dy + dz * dz < 0.25) { // 0.5^2 = 0.25
                     valid = false;
                     break;
                 }
@@ -67,8 +66,8 @@ void icRandom(int numParticles, double Lx, double Ly, double Lz, double percent_
         V[i] = ((double)rand() / RAND_MAX) - 0.5;
         W[i] = ((double)rand() / RAND_MAX) - 0.5;
     }
-    int numType1 = static_cast<int>(ceil(numParticles * (percent_type1 / 100.0)));
-    vector<double> particleTypes(numParticles, 0.0);
+    int numType1 = (int)ceil(numParticles * (percent_type1 / 100.0));
+    vector<double> particleTypes(numParticles, 0);
     for (int i = 0; i < numType1; i++) {
         particleTypes[i] = 1;
     }
@@ -84,7 +83,7 @@ void icRandom(int numParticles, double Lx, double Ly, double Lz, double percent_
 map<string, map<string, vector<double>>> getTestCases() {
     map<string, map<string, vector<double>>> testCaseDict;
     testCaseDict["--ic-one"] = {
-        {"runtime", {0.2}},
+        {"runtime", {1}},
         {"numParticles", {1}},
         {"x", {10.0}},
         {"y", {10.0}},
@@ -152,66 +151,46 @@ map<string, map<string, vector<double>>> getTestCases() {
     return testCaseDict;
 }
 
-// Improved updateVars using parallel reduction for force accumulation.
-// We use per-thread private force arrays and then merge them in a separate parallel loop.
-void updateVars(double min_dist, int numParticles, double dt, double Lx, double Ly, double Lz,
-    vector<double>& type, double temperature, bool tempProvided, double kb,
+//-----------------------------------------------------------------
+// Serial flattened force updater
+//-----------------------------------------------------------------
+// This function uses a single loop over the total number of unique pairs.
+void updateVarsSerialFlattened(int numParticles, double dt, double Lx, double Ly, double Lz,
+    const vector<double>& type, bool tempProvided, double temperature, double kb,
     const int epsilon[2][2], const int sigma[2][2],
     vector<double>& X, vector<double>& Y, vector<double>& Z,
     vector<double>& U, vector<double>& V, vector<double>& W,
     vector<double>& E, vector<double>& speed,
     vector<double>& Fx, vector<double>& Fy, vector<double>& Fz)
 {
-    int nthreads = omp_get_max_threads();
-    // Allocate a 2D vector to store per-thread partial force sums.
-    vector<vector<double>> Fx_local(nthreads, vector<double>(numParticles, 0.0));
-    vector<vector<double>> Fy_local(nthreads, vector<double>(numParticles, 0.0));
-    vector<vector<double>> Fz_local(nthreads, vector<double>(numParticles, 0.0));
+    // Flattened force loop
+    long long totalPairs = (long long)numParticles * (numParticles - 1) / 2;
+    for (long long p = 0; p < totalPairs; p++) {
+        double tmp = sqrt(8.0 * p + 1.0);
+        int i = (int)((tmp - 1.0) / 2.0);
+        int j = p - (i * (i + 1) / 2) + i + 1;
 
-    #pragma omp parallel
-    {
-        int tid = omp_get_thread_num();
-        #pragma omp for schedule(dynamic, 1000)
-        for (int i = 0; i < numParticles; i++) {
-            for (int j = i + 1; j < numParticles; j++) {
-                double xij = X[i] - X[j];
-                double yij = Y[i] - Y[j];
-                double zij = Z[i] - Z[j];
-                double rij = xij*xij + yij*yij + zij*zij; // squared distance
+        double xij = X[i] - X[j];
+        double yij = Y[i] - Y[j];
+        double zij = Z[i] - Z[j];
+        double rij = xij*xij + yij*yij + zij*zij;  // squared distance
 
-                int t1 = type[i];
-                int t2 = type[j];
-                int e = epsilon[t1][t2];
-                int s = sigma[t1][t2];
+        int t1 = static_cast<int>(type[i]);
+        int t2 = static_cast<int>(type[j]);
+        int e = epsilon[t1][t2];
+        int s = sigma[t1][t2];
 
-                // Compute inverse r^4: note that (rij^4) = (rij*rij*rij*rij)
-                double inv_r4 = 1.0 / (rij * rij * rij * rij);
-                double sigma6_val = s6_table[s] * inv_r4;
-                double sigma12_val = sigma6_val * sigma6_val * rij;
-                double coeff = -24.0 * e * (2.0 * sigma12_val - sigma6_val);
+        double inv_r4 = 1.0 / (rij * rij * rij * rij);
+        double sigma6_val = s6_table[s] * inv_r4;
+        double sigma12_val = sigma6_val * sigma6_val * rij;
+        double coeff = -24.0 * e * (2.0 * sigma12_val - sigma6_val);
 
-                Fx_local[tid][i] -= xij * coeff;
-                Fy_local[tid][i] -= yij * coeff;
-                Fz_local[tid][i] -= zij * coeff;
-                Fx_local[tid][j] += xij * coeff;
-                Fy_local[tid][j] += yij * coeff;
-                Fz_local[tid][j] += zij * coeff;
-            }
-        }
-    } // End parallel region.
-
-    // Merge per-thread partial force arrays into global Fx, Fy, Fz.
-    #pragma omp parallel for schedule(static)
-    for (int i = 0; i < numParticles; i++) {
-        double sumFx = 0.0, sumFy = 0.0, sumFz = 0.0;
-        for (int t = 0; t < nthreads; t++) {
-            sumFx += Fx_local[t][i];
-            sumFy += Fy_local[t][i];
-            sumFz += Fz_local[t][i];
-        }
-        Fx[i] = sumFx;
-        Fy[i] = sumFy;
-        Fz[i] = sumFz;
+        Fx[i] -= xij * coeff;
+        Fy[i] -= yij * coeff;
+        Fz[i] -= zij * coeff;
+        Fx[j] += xij * coeff;
+        Fy[j] += yij * coeff;
+        Fz[j] += zij * coeff;
     }
 
     // Update velocities.
@@ -222,11 +201,11 @@ void updateVars(double min_dist, int numParticles, double dt, double Lx, double 
         W[i] += dt * Fz[i] / m;
     }
 
-    // Compute energies and speeds.
+    // Compute energies.
     double E_total = 0.0;
     for (int i = 0; i < numParticles; i++) {
         int m = (type[i] == 0) ? 1 : 10;
-        double speed2 = U[i]*U[i] + V[i]*V[i] + W[i]*W[i];
+        double speed2 = U[i] * U[i] + V[i] * V[i] + W[i] * W[i];
         E[i] = 0.5 * m * speed2;
         E_total += E[i];
     }
@@ -242,7 +221,7 @@ void updateVars(double min_dist, int numParticles, double dt, double Lx, double 
         }
     }
 
-    // Update positions and enforce boundary conditions.
+    // Update positions and apply boundary conditions.
     for (int i = 0; i < numParticles; i++) {
         X[i] += dt * U[i];
         Y[i] += dt * V[i];
@@ -280,7 +259,6 @@ void writeToFiles(int t, int numParticles, const vector<double>& timestamps,
     const vector<double>& V, const vector<double>& W,
     const vector<double>& E)
 {
-    // Append the current time step to output.txt.
     ofstream outfile("output.txt", ios::app);
     outfile << "Time step " << t << "\n";
     for (int i = 0; i < numParticles; i++) {
@@ -294,12 +272,39 @@ void writeToFiles(int t, int numParticles, const vector<double>& timestamps,
     }
     outfile << "\n";
     outfile.close();
+
+    // Append energy data.
+    ofstream energyfile("energy.txt", ios::app);
+    energyfile << "runtime";
+    for (int i = 0; i < numParticles; i++) {
+        energyfile << " E" << i;
+    }
+    energyfile << "\n";
+    energyfile << timestamps[t];
+    for (int i = 0; i < numParticles; i++) {
+        energyfile << " " << E[i];
+    }
+    energyfile << "\n";
+    energyfile.close();
+
+    // Append positions.
+    ofstream posfile("positions.txt", ios::app);
+    posfile << "runtime";
+    for (int i = 0; i < numParticles; i++) {
+        posfile << " x" << i << " y" << i;
+    }
+    posfile << "\n";
+    posfile << defaultfloat << timestamps[t];
+    for (int i = 0; i < numParticles; i++) {
+        posfile << " " << fixed << setprecision(6) << X[i]
+                << " " << fixed << setprecision(6) << Y[i];
+    }
+    posfile << "\n";
+    posfile.close();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-//
 //                              MAIN PROGRAM
-//
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 int main(int argc, char *argv[]) {
@@ -309,7 +314,7 @@ int main(int argc, char *argv[]) {
     double dt = 0.001;
     bool testCase = false, timeProvided = false, nProvided = false, icRandomChosen = false, tempProvided = false;
 
-    // Remove old output files.
+    // Clean up old output files.
     ifstream file1("output.txt");
     if (file1) { file1.close(); remove("output.txt"); }
     ifstream file2("energy.txt");
@@ -318,7 +323,7 @@ int main(int argc, char *argv[]) {
     if (file3) { file3.close(); remove("positions.txt"); }
 
     vector<double> X, Y, Z, U, V, W, E, speed, Fx, Fy, Fz;
-    double xij, yij, zij, rij, dPhi_dx, dPhi_dy, dPhi_dz;
+    double xij, yij, zij, rij; // temporary variables used in force updater
     map<string, map<string, vector<double>>> testCaseDict = getTestCases();
     double runtime, percent_type1, temperature;
     double kb = 0.8314459920816467;
@@ -328,22 +333,22 @@ int main(int argc, char *argv[]) {
     while (i < argc) {
         string arg = argv[i];
         if (arg == "--Lx") {
-            Lx = stod(argv[++i]);
+            Lx = stod(argv[i+1]);
         } else if (arg == "--Ly") {
-            Ly = stod(argv[++i]);
+            Ly = stod(argv[i+1]);
         } else if (arg == "--Lz") {
-            Lz = stod(argv[++i]);
+            Lz = stod(argv[i+1]);
         } else if (arg == "--T") {
-            runtime = stod(argv[++i]);
+            runtime = stod(argv[i+1]);
             timeProvided = true;
         } else if (arg == "--N") {
-            numParticles = stoi(argv[++i]);
+            numParticles = stoi(argv[i+1]);
             nProvided = true;
         } else if (arg == "--temp") {
-            temperature = stod(argv[++i]);
+            temperature = stod(argv[i+1]);
             tempProvided = true;
         } else if (arg == "--percent-type1") {
-            percent_type1 = stod(argv[++i]);
+            percent_type1 = stod(argv[i+1]);
         } else if (arg == "--ic-random") {
             icRandomChosen = true;
         } else if (testCaseDict.find(arg) != testCaseDict.end()) {
@@ -394,7 +399,7 @@ int main(int argc, char *argv[]) {
     }
 
     variableInitialisation(totalSteps, numParticles, X, Y, Z, U, V, W, E, speed, Fx, Fy, Fz);
-
+    //cout << "hi 1" << endl;
     if (icRandomChosen) {
         icRandom(numParticles, Lx, Ly, Lz, percent_type1, X, Y, Z, U, V, W, type);
     } else {
@@ -417,14 +422,15 @@ int main(int argc, char *argv[]) {
 
     // Main simulation loop.
     for (int t = 0; t < totalSteps; t++) {
+        // Reset forces.
         for (int i = 0; i < numParticles; i++) {
             Fx[i] = 0.0;
             Fy[i] = 0.0;
             Fz[i] = 0.0;
         }
-        updateVars(min_dist, numParticles, dt, Lx, Ly, Lz, type, temperature,
-                   tempProvided, kb, epsilon, sigma, X, Y, Z, U, V, W, E, speed,
-                   Fx, Fy, Fz);
+        // Use the flattened serial updater.
+        updateVarsSerialFlattened(numParticles, dt, Lx, Ly, Lz, type, tempProvided, temperature, kb,
+                                  epsilon, sigma, X, Y, Z, U, V, W, E, speed, Fx, Fy, Fz);
         if (t % 100 == 0) {
             writeToFiles(t, numParticles, timestamps, X, Y, Z, U, V, W, E);
         }
