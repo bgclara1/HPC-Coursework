@@ -1,21 +1,31 @@
 CXX = g++
-CXXFLAGS = -std=c++11 -O2 -ftree-vectorize
+CXXFLAGS = -std=c++11 -O3
 
-#give actual names instead of using default symbols for ease
-TARGET = md
+NVCC = nvcc
+
+MD = md
 UNITTESTS = unit_tests
+MDPAR  = mdpar
+MDCUDA = mdcuda
 
-SIM_SOURCES = serialSim.cpp
+SERIAL_SOURCES    = serialSim.cpp
 UNITTESTS_SOURCES = unit_tests.cpp
+PAR_SOURCES       = parallelSim.cpp
+CUDA_SOURCES      = cuda.cu
 
-all: $(TARGET)
+all: $(MD) $(MDPAR) $(MDCUDA)
 
-$(TARGET): $(SIM_SOURCES)
-	$(CXX) $(CXXFLAGS) $(SIM_SOURCES) -o $(TARGET)
+$(MD): $(SERIAL_SOURCES)
+	$(CXX) $(CXXFLAGS) -o $@ $^
 
-unittests: $(TARGET) $(UNITTESTS_SOURCES)
-	$(CXX) $(CXXFLAGS) -o $(UNITTESTS) $(UNITTESTS_SOURCES)
-	
+unittests: $(MD) $(UNITTESTS_SOURCES)
+	$(CXX) $(CXXFLAGS) -o $@ $^
+
+$(MDPAR): $(PAR_SOURCES)
+	$(CXX) $(CXXFLAGS) -fopenmp -o $@ $^
+
+$(MDCUDA): $(CUDA_SOURCES)
+	$(NVCC) $(CXXFLAGS) -o $@ $^
 
 .PHONY: unit_tests
 unit_tests: unittests
@@ -24,10 +34,9 @@ unit_tests: unittests
 doc: Doxyfile
 	doxygen Doxyfile
 
-.PHONY: clean 
-
+.PHONY: clean
 clean:
-	rm -f $(TARGET) $(UNITTESTS) *.o *.txt
+	rm -f $(MD) $(UNITTESTS) $(MDPAR) $(MDCUDA) *.o *.txt
 
 
 
