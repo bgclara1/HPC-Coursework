@@ -13,12 +13,12 @@ UNITTESTS_SOURCES = unit_tests.cpp
 PAR_SOURCES       = parallelSim.cpp
 CUDA_SOURCES      = cuda.cu
 
-all: $(MD) $(MDPAR) $(MDCUDA)
+all: $(MD) $(UNITTESTS) $(MDPAR) $(MDCUDA)
 
 $(MD): $(SERIAL_SOURCES)
 	$(CXX) $(CXXFLAGS) -o $@ $^
 
-unittests: $(MD) $(UNITTESTS_SOURCES)
+$(UNITTESTS): $(UNITTESTS_SOURCES)
 	$(CXX) $(CXXFLAGS) -o $@ $^
 
 $(MDPAR): $(PAR_SOURCES)
@@ -27,8 +27,8 @@ $(MDPAR): $(PAR_SOURCES)
 $(MDCUDA): $(CUDA_SOURCES)
 	$(NVCC) $(CXXFLAGS) -o $@ $^
 
-.PHONY: unit_tests
-unit_tests: unittests
+.PHONY: unittests
+unittests: $(UNITTESTS)
 	./$(UNITTESTS)
 
 doc: Doxyfile
@@ -37,6 +37,3 @@ doc: Doxyfile
 .PHONY: clean
 clean:
 	rm -f $(MD) $(UNITTESTS) $(MDPAR) $(MDCUDA) *.o *.txt
-
-
-
