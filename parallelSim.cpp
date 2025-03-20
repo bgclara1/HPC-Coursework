@@ -12,7 +12,7 @@
 
 using namespace std;
 
-// Precomputed s^6 for s=1,2,3 (index 0 is unused)
+
 const double s6_table[4] = {0.0, 1.0, 64.0, 729.0};
 
 void variableInitialisation(int totalSteps, int numParticles,
@@ -163,7 +163,6 @@ void updateVars(double min_dist, int numParticles, double dt, double Lx, double 
     vector<double>& Fx, vector<double>& Fy, vector<double>& Fz)
 {
     int nthreads = omp_get_max_threads();
-    // Allocate a 2D vector to store per-thread partial force sums.
     vector<vector<double>> Fx_local(nthreads, vector<double>(numParticles, 0.0));
     vector<vector<double>> Fy_local(nthreads, vector<double>(numParticles, 0.0));
     vector<vector<double>> Fz_local(nthreads, vector<double>(numParticles, 0.0));
@@ -171,7 +170,7 @@ void updateVars(double min_dist, int numParticles, double dt, double Lx, double 
     #pragma omp parallel
     {
         int tid = omp_get_thread_num();
-        #pragma omp for schedule(dynamic, 1000)
+        #pragma omp for schedule(guided)
         for (int i = 0; i < numParticles; i++) {
             for (int j = i + 1; j < numParticles; j++) {
                 double xij = X[i] - X[j];
@@ -184,11 +183,10 @@ void updateVars(double min_dist, int numParticles, double dt, double Lx, double 
                 int e = epsilon[t1][t2];
                 int s = sigma[t1][t2];
 
-                // Compute inverse r^4: note that (rij^4) = (rij*rij*rij*rij)
                 double inv_r4 = 1.0 / (rij * rij * rij * rij);
-                double sigma6_val = s6_table[s] * inv_r4;
-                double sigma12_val = sigma6_val * sigma6_val * rij;
-                double coeff = -24.0 * e * (2.0 * sigma12_val - sigma6_val);
+                double sigma6 = s6_table[s] * inv_r4;
+                double sigma12 = sigma6 * sigma6 * rij;
+                double coeff = -24.0 * e * (2.0 * sigma12 - sigma6);
 
                 Fx_local[tid][i] -= xij * coeff;
                 Fy_local[tid][i] -= yij * coeff;
@@ -200,7 +198,6 @@ void updateVars(double min_dist, int numParticles, double dt, double Lx, double 
         }
     } // End parallel region.
 
-    // Merge per-thread partial force arrays into global Fx, Fy, Fz.
     #pragma omp parallel for schedule(static)
     for (int i = 0; i < numParticles; i++) {
         double sumFx = 0.0, sumFy = 0.0, sumFz = 0.0;
@@ -214,7 +211,6 @@ void updateVars(double min_dist, int numParticles, double dt, double Lx, double 
         Fz[i] = sumFz;
     }
 
-    // Update velocities.
     for (int i = 0; i < numParticles; i++) {
         int m = (type[i] == 0) ? 1 : 10;
         U[i] += dt * Fx[i] / m;
@@ -222,7 +218,6 @@ void updateVars(double min_dist, int numParticles, double dt, double Lx, double 
         W[i] += dt * Fz[i] / m;
     }
 
-    // Compute energies and speeds.
     double E_total = 0.0;
     for (int i = 0; i < numParticles; i++) {
         int m = (type[i] == 0) ? 1 : 10;
@@ -231,7 +226,6 @@ void updateVars(double min_dist, int numParticles, double dt, double Lx, double 
         E_total += E[i];
     }
 
-    // Temperature scaling.
     if (tempProvided) {
         double currentTemp = (2.0 / (3.0 * numParticles * kb)) * E_total;
         double lambda = sqrt(temperature / currentTemp);
@@ -242,7 +236,6 @@ void updateVars(double min_dist, int numParticles, double dt, double Lx, double 
         }
     }
 
-    // Update positions and enforce boundary conditions.
     for (int i = 0; i < numParticles; i++) {
         X[i] += dt * U[i];
         Y[i] += dt * V[i];
@@ -280,7 +273,7 @@ void writeToFiles(int t, int numParticles, const vector<double>& timestamps,
     const vector<double>& V, const vector<double>& W,
     const vector<double>& E)
 {
-    // Append the current time step to output.txt.
+
     ofstream outfile("output.txt", ios::app);
     outfile << "Time step " << t << "\n";
     for (int i = 0; i < numParticles; i++) {
@@ -344,6 +337,8 @@ int main(int argc, char *argv[]) {
             tempProvided = true;
         } else if (arg == "--percent-type1") {
             percent_type1 = stod(argv[++i]);
+        } else if (arg == "--dt") {
+            dt = stod(argv[++i]);
         } else if (arg == "--ic-random") {
             icRandomChosen = true;
         } else if (testCaseDict.find(arg) != testCaseDict.end()) {
