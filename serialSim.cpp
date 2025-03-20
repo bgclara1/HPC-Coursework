@@ -97,7 +97,7 @@ void icRandom(int numParticles, double Lx, double Ly, double Lz, double percent_
             cy = ((double)rand() / RAND_MAX) * Ly;
             cz = ((double)rand() / RAND_MAX) * Lz;
             bool valid = true;
-            for (int j = 0; j < i; j++) {
+            for (int j = 0; j < i; j++) {   // check the particles aren't initialised too close together
                 double dx = cx - X[j];
                 double dy = cy - Y[j];
                 double dz = cz - Z[j];
@@ -137,7 +137,7 @@ void icRandom(int numParticles, double Lx, double Ly, double Lz, double percent_
  *
  * @return A map where keys are test case names (eg. --ic-one-vel) and their values are maps containing their respective simulation parameters.
  */
-map<string, map<string, vector<double>>> getTestCases() {
+map<string, map<string, vector<double>>> getTestCases() {   // nested dictionaries/maps to store the test cases
     map<string, map<string, vector<double>>> testCaseDict;
     testCaseDict["--ic-one"] = {
         {"runtime", {1}},
@@ -255,43 +255,43 @@ void updateVars(double min_dist, int numParticles, double dt, double Lx, double 
 {
     double s6 = 0;
     for (int i = 0; i < numParticles; i++) {
-        for (int j = i + 1; j < numParticles; j++) {
+        for (int j = i + 1; j < numParticles; j++) {        // builds upper triangle of matrix to avoid the double calculation
             xij = X[i] - X[j];
             yij = Y[i] - Y[j];
             zij = Z[i] - Z[j];
-            rij = xij * xij + yij * yij + zij * zij; // r squared
+            rij = xij * xij + yij * yij + zij * zij; // distance squared
 
             int t1 = type[i];
             int t2 = type[j];
-            int e = epsilon[t1][t2];
+            int e = epsilon[t1][t2];        // finds e and s of the particular particle pair
             int s = sigma[t1][t2];
 
             double sigma6 = (s * s * s * s * s * s) / (rij * rij * rij) / rij;
             double sigma12 = sigma6 * sigma6 * rij;
             double coeff = -24 * e * (2 * sigma12 - sigma6);
 
-            Fx[i] -= xij * coeff;
+            Fx[i] -= xij * coeff;       //calculate the net forces
             Fy[i] -= yij * coeff;
             Fz[i] -= zij * coeff;
-            Fx[j] += xij * coeff;
+            Fx[j] += xij * coeff;   // the opposite sign is applied to the j indices as this represents the missing lower triangle of the matrix
             Fy[j] += yij * coeff;
             Fz[j] += zij * coeff;
         }
     }
     for (int i = 0; i < numParticles; i++) {
         int m = (type[i] == 0) ? 1 : 10; // if true pick 1 else 10
-        U[i] = U[i] + dt * Fx[i] / m;
+        U[i] = U[i] + dt * Fx[i] / m; //update velocities
         V[i] = V[i] + dt * Fy[i] / m;
         W[i] = W[i] + dt * Fz[i] / m;
     }
     double E_total = 0.0;
-    for (int i = 0; i < numParticles; i++) {
+    for (int i = 0; i < numParticles; i++) {                // calculate kinetic energy
         int m = (type[i] == 0) ? 1 : 10;
         double speed2 = (U[i] * U[i] + V[i] * V[i] + W[i] * W[i]);
         E[i] = 0.5 * m * speed2;
         E_total += E[i];
     }
-    if (tempProvided) {
+    if (tempProvided) {                 //update velocity if temperature is defined by the user
         double currentTemp = (2.0 / (3.0 * numParticles * kb)) * E_total;
         double lambda = sqrt(temperature / currentTemp);
         for (int i = 0; i < numParticles; i++) {
@@ -301,10 +301,11 @@ void updateVars(double min_dist, int numParticles, double dt, double Lx, double 
         }
     }
     for (int i = 0; i < numParticles; i++) {
-        X[i] = X[i] + dt * U[i];
+        X[i] = X[i] + dt * U[i];                // update position
         Y[i] = Y[i] + dt * V[i];
         Z[i] = Z[i] + dt * W[i];
-        if (X[i] > Lx) { // Apply BCs
+
+        if (X[i] > Lx) {                            // Apply Boundary conditions
             X[i] = 2 * Lx - X[i];
             U[i] = -abs(U[i]);
         }
@@ -358,7 +359,7 @@ void writeToFiles(int t, int numParticles, const vector<double>& timestamps,
 {
 
     {
-        ofstream energyfile("energy.txt", ios::app);
+        ofstream energyfile("energy.txt", ios::app);        // write time stamp and KE to kinetic energy file
         energyfile << "runtime";
         for (int i = 0; i < numParticles; i++) {
             energyfile << " E" << i;
@@ -372,7 +373,7 @@ void writeToFiles(int t, int numParticles, const vector<double>& timestamps,
     }
 
     {
-        ofstream posfile("positions.txt", ios::app);
+        ofstream posfile("positions.txt", ios::app);        // write time stamp, x and y position to position file
         posfile << "runtime";
         for (int i = 0; i < numParticles; i++) {
             posfile << " x" << i << " y" << i;
@@ -406,9 +407,9 @@ void writeToFiles(int t, int numParticles, const vector<double>& timestamps,
  * @return Exit value
  */
 int main(int argc, char *argv[]) { // read cmd args w main params.
-    auto start = chrono::high_resolution_clock::now();
+    auto start = chrono::high_resolution_clock::now();              // start runtime clock
     int i = 0;
-    double Lx = 20;
+    double Lx = 20;         // initialise default params
     double Ly = 20;
     double Lz = 20;
     double dt = 0.001;
@@ -418,7 +419,7 @@ int main(int argc, char *argv[]) { // read cmd args w main params.
     bool icRandomChosen = false;
     bool tempProvided = false;
 
-    ifstream file1("output.txt"); // in case make clean isn't run
+    ifstream file1("output.txt"); // close files in case make clean isn't run. Function write to file appends so it's worth doing just in case.
     if (file1) {
         file1.close();
         remove("output.txt");
@@ -437,12 +438,12 @@ int main(int argc, char *argv[]) { // read cmd args w main params.
     vector<double> X, Y, Z, U, V, W, E, speed, Fx, Fy, Fz;
     double xij, yij, zij, rij, dPhi_dx, dPhi_dy, dPhi_dz;
 
-    map<string, map<string, vector<double>>> testCaseDict = getTestCases();
+    map<string, map<string, vector<double>>> testCaseDict = getTestCases();        // get the params for the test cases 1 to 6
     double runtime, percent_type1, temperature;
-    double kb = 0.8314459920816467;
+    double kb = 0.8314459920816467;         // Boltzman constant
     int numParticles;
     vector<double> x, y, z, u, v, w, type;
-    while (i < argc) {
+    while (i < argc) {                              // save args given by user into relevant variables
         if (string(argv[i]) == "--Lx") {
             Lx = stod(argv[i + 1]);
         } else if (string(argv[i]) == "--Ly") {
@@ -496,7 +497,7 @@ int main(int argc, char *argv[]) { // read cmd args w main params.
         i++;
     }
 
-    if ((testCase == true) || (icRandomChosen == true && nProvided == true && timeProvided == true)) {
+    if ((testCase == true) || (icRandomChosen == true && nProvided == true && timeProvided == true)) {      // check if args are valid
         cout << "Command Line input well-formatted, carrying on..." << endl;
     } else {
         cout << "Command line input formatted incorrectly, exiting program." << endl;
@@ -506,16 +507,16 @@ int main(int argc, char *argv[]) { // read cmd args w main params.
     int totalSteps = (runtime / dt) + 1;
     vector<double> timestamps(totalSteps);
     for (int i = 0; i < totalSteps; i++) {
-        timestamps[i] = i * dt;
+        timestamps[i] = i * dt;             // vector going from 0 to time T in increments dt
     }
 
-    variableInitialisation(totalSteps, numParticles, X, Y, Z, U, V, W, E, speed, Fx, Fy, Fz);
+    variableInitialisation(totalSteps, numParticles, X, Y, Z, U, V, W, E, speed, Fx, Fy, Fz);       //initialise variables - given a separate function for main function readability
 
     if (icRandomChosen) {
         icRandom(numParticles, Lx, Ly, Lz, percent_type1, X, Y, Z, U, V, W, type);
     } else {
         for (int i = 0; i < numParticles; i++) {
-            X[i] = x[i]; // the lower case x,y,z etc are in testCaseDict
+            X[i] = x[i]; // the lower case x,y,z etc are how the vars are stored in testCaseDict
             Y[i] = y[i];
             Z[i] = z[i];
             U[i] = u[i];
@@ -524,10 +525,10 @@ int main(int argc, char *argv[]) { // read cmd args w main params.
         }
     }
 
-    int epsilon[2][2] = { {3,15}, {15,60} };
+    int epsilon[2][2] = { {3,15}, {15,60} };    //initialise epsilon and sigma as stated in brief
     int sigma[2][2] = { {1,2}, {2,3} };
 
-    double min_dist = ((X[1] - X[0]) * (X[1] - X[0]) +
+    double min_dist = ((X[1] - X[0]) * (X[1] - X[0]) +      // calculate an initial minimum distance to compare against using first 2 particles at t=0
                        (Y[1] - Y[0]) * (Y[1] - Y[0]) +
                        (Z[1] - Z[0]) * (Z[1] - Z[0]));
 
@@ -540,11 +541,8 @@ int main(int argc, char *argv[]) { // read cmd args w main params.
         updateVars(min_dist, numParticles, dt, Lx, Ly, Lz, type, temperature,
                    tempProvided, kb, epsilon, sigma, X, Y, Z, U, V, W, E, speed,
                    xij, yij, zij, rij, Fx, Fy, Fz);
-        if (t % 100 == 0) {
+        if (t % 100 == 0) {     // save to file every 100 timestamps to balance performance and fineness of file data
             writeToFiles(t, numParticles, timestamps, X, Y, Z, U, V, W, E);
-            // ofstream outfile("output.txt", ios::app);
-            // outfile << "Time step " << t << "\n";
-            // outfile.close();
         }
     }
     cout << "minimum distance: " << sqrt(min_dist) << endl;
