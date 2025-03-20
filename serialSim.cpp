@@ -23,6 +23,9 @@
 
 using namespace std;
 
+const double s6_table[4] = {0.0, 1.0, 64.0, 729.0}; //The values of sigma ^ 6 precalculated and set as a global constant as 
+                                                    //the variable never changes and is computationally intensive at a high num of particles
+
 /**
  * @brief Initializes particle variables.
  *
@@ -266,9 +269,10 @@ void updateVars(double min_dist, int numParticles, double dt, double Lx, double 
             int e = epsilon[t1][t2];        // finds e and s of the particular particle pair
             int s = sigma[t1][t2];
 
-            double sigma6 = (s * s * s * s * s * s) / (rij * rij * rij) / rij;
+            double inv_r4 = 1.0 / (rij * rij * rij * rij); //calculation split up and not including pow for optimisation reasons
+            double sigma6 = s6_table[s] * inv_r4;
             double sigma12 = sigma6 * sigma6 * rij;
-            double coeff = -24 * e * (2 * sigma12 - sigma6);
+            double coeff = -24.0 * e * (2.0 * sigma12 - sigma6);
 
             Fx[i] -= xij * coeff;       //calculate the net forces
             Fy[i] -= yij * coeff;
@@ -280,9 +284,9 @@ void updateVars(double min_dist, int numParticles, double dt, double Lx, double 
     }
     for (int i = 0; i < numParticles; i++) {
         int m = (type[i] == 0) ? 1 : 10; // if true pick 1 else 10
-        U[i] = U[i] + dt * Fx[i] / m; //update velocities
-        V[i] = V[i] + dt * Fy[i] / m;
-        W[i] = W[i] + dt * Fz[i] / m;
+        U[i] += dt * Fx[i] / m; //update velocities
+        V[i] += dt * Fy[i] / m;
+        W[i] += dt * Fz[i] / m;
     }
     double E_total = 0.0;
     for (int i = 0; i < numParticles; i++) {                // calculate kinetic energy
@@ -388,13 +392,6 @@ void writeToFiles(int t, int numParticles, const vector<double>& timestamps,
     }
     
 }
-
-
-///////////////////////////////////////////////////////////////////////////////////////////////////
-//
-//                              MAIN PROGRAM
-//
-///////////////////////////////////////////////////////////////////////////////////////////////////
 
 /**
  * @brief Main simulation program.

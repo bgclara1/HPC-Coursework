@@ -1,6 +1,6 @@
 /**
- * @file parallelSim.cpp
- * @brief A solver for particle interaction in an enclosed space modelled using Lennard-Jones potential using parallelisation with openMP.
+ * @file cuda.cu
+ * @brief  A solver for particle interaction in an enclosed space modelled using Lennard-Jones potential using parallelisation with CUDA.
  *
  * This program simulates the interaction of particles within an enclosed space. 
  * It uses Lennard-Jones potential to model the interactions. 
@@ -9,6 +9,7 @@
  * the temperature, the duration of the simulation and the timestep. 
  * The user may also chose to run 6 example simulations.
  */
+
 
  #include <iostream>
  #include <map>
@@ -20,54 +21,70 @@
  #include <iomanip>
  #include <ctime>
  #include <chrono>
- #include <omp.h>
+ #include <cuda_runtime.h>
  
  using namespace std;
  
- 
- const double s6_table[4] = {0.0, 1.0, 64.0, 729.0};//The values of sigma ^ 6 precalculated and set as a global constant as 
+ __constant__ double s6_table[4] = {0.0, 1.0, 64.0, 729.0}; //The values of sigma ^ 6 precalculated and set as a global constant as 
  //the variable never changes and is computationally intensive.
  
  
  /**
-  * @brief Initializes particle variables.
+  * @brief Allocates and initializes unified memory for simulation arrays.
   *
-  * This function initializes the variables used for particle properties by setting them
-  * to totalSteps * numParticles with initial values of 0.0. The variables that get updated (X, Y etc.)
-  * are stored as vector doubles such that they contain the information of each particle in the system.
+  * This function allocates managed memory for the updating variables X,Y etc...,
+  * Then the memory block contents is set to zero.
   *
-  * @param totalSteps Total number of steps in the simulation
-  * @param numParticles Number of particles 
-  * @param X x coordinate of each particle
-  * @param Y y coordinate of each particle
-  * @param Z z coordinate of each particle
-  * @param U x velocity of each particle
-  * @param V y velocity of each particle
-  * @param W z velocity of each particle
-  * @param E Kinetic Energy of each particle
-  * @param speed speed of each particle
-  * @param Fx x direction force component of each particle
-  * @param Fy y direction force component of each particle
-  * @param Fz z direction force component of each particle
+  * @param totalSteps Number of simulation steps         
+  * @param numParticles Number of particles
+  * @param X Pointer to the pointer for x coordinates
+  * @param Y Pointer to the pointer for y coordinate
+  * @param Z Pointer to the pointer for z coordinates
+  * @param U Pointer to the pointer for x velocities
+  * @param V Pointer to the pointer for y velocities
+  * @param W Pointer to the pointer for z velocities
+  * @param E Pointer to the pointer that will hold the kinetic energy
+  * @param speed Pointer to the pointer that will hold the speeds
+  * @param Fx Pointer to the pointer of the x direction force component of each particle
+  * @param Fy Pointer to the pointer of the y direction force component of each particle
+  * @param Fz Pointer to the pointer of the z direction force component of each particle
+  * @param type Pointer to the pointer that will hold the particle types.
   */
  void variableInitialisation(int totalSteps, int numParticles,
-     vector<double>& X, vector<double>& Y, vector<double>& Z,
-     vector<double>& U, vector<double>& V, vector<double>& W,
-     vector<double>& E, vector<double>& speed,
-     vector<double>& Fx, vector<double>& Fy, vector<double>& Fz)
+     double** X, double** Y, double** Z,
+     double** U, double** V, double** W,
+     double** E, double** speed,
+     double** Fx, double** Fy, double** Fz,
+     double** type)
  {
-     int size = totalSteps * numParticles;
-     X.assign(size, 0.0);
-     Y.assign(size, 0.0);
-     Z.assign(size, 0.0);
-     U.assign(size, 0.0);
-     V.assign(size, 0.0);
-     W.assign(size, 0.0);
-     E.assign(size, 0.0);
-     speed.assign(size, 0.0);
-     Fx.assign(size, 0.0);
-     Fy.assign(size, 0.0);
-     Fz.assign(size, 0.0);
+     double size = totalSteps * numParticles * sizeof(double);
+     cudaMallocManaged((void**)X, size);  // basically allocate memory and put address in the pointer that X points to
+     cudaMallocManaged((void**)Y, size);
+     cudaMallocManaged((void**)Z, size);
+     cudaMallocManaged((void**)U, size);
+     cudaMallocManaged((void**)V, size);
+     cudaMallocManaged((void**)W, size);
+     cudaMallocManaged((void**)E, size);
+     cudaMallocManaged((void**)speed, size);
+     cudaMallocManaged((void**)Fx, size);
+     cudaMallocManaged((void**)Fy, size);
+     cudaMallocManaged((void**)Fz, size);
+ 
+     cudaMemset(*X, 0, size);
+     cudaMemset(*Y, 0, size);
+     cudaMemset(*Z, 0, size);
+     cudaMemset(*U, 0, size);
+     cudaMemset(*V, 0, size);
+     cudaMemset(*W, 0, size);
+     cudaMemset(*E, 0, size);
+     cudaMemset(*speed, 0, size);
+     cudaMemset(*Fx, 0, size);
+     cudaMemset(*Fy, 0, size);
+     cudaMemset(*Fz, 0, size);
+ 
+     double typeSize = numParticles * sizeof(double);
+     cudaMallocManaged((void**)type, typeSize);
+     cudaMemset(*type, 0, typeSize);
  }
  
  
@@ -83,20 +100,22 @@
   * @param Ly Length of the container in the y direction
   * @param Lz Length of the container in the z direction
   * @param percent_type1 Percentage of particles of type 1 (heavy)
-  * @param X x coordinate of each particle
-  * @param Y y coordinate of each particle
-  * @param Z z coordinate of each particle
-  * @param U x velocity of each particle
-  * @param V y velocity of each particle
-  * @param W z velocity of each particle
-  * @param type type of each particle (0 or 1 ie. light or heavy)
+  * @param X Pointer to x coordinates of each particle
+  * @param Y Pointer to y coordinates of each particle
+  * @param Z Pointer to z coordinates of each particle
+  * @param U Pointer to x velocities of each particle
+  * @param V Pointer to y velocities of each particle
+  * @param W Pointer to z velocities of each particle
+  * @param type Pointer to an array of the type of each particle (0 or 1 ie. light or heavy)
   */
  void icRandom(int numParticles, double Lx, double Ly, double Lz, double percent_type1,
-     vector<double>& X, vector<double>& Y, vector<double>& Z,
-     vector<double>& U, vector<double>& V, vector<double>& W,
-     vector<double>& type)
+     double* X, double* Y, double* Z,
+     double* U, double* V, double* W,
+     double* type)
  {
-     srand(static_cast<unsigned int>(time(0)));
+     srand(time(0));
+ 
+     // Initialize positions and velocities.
      for (int i = 0; i < numParticles; i++) {
          double cx, cy, cz;
          while (true) {
@@ -108,7 +127,7 @@
                  double dx = cx - X[j];
                  double dy = cy - Y[j];
                  double dz = cz - Z[j];
-                 if (dx * dx + dy * dy + dz * dz < 0.25) {  // 0.5^2 = 0.25  // check the particles aren't initialised too close together
+                 if (dx * dx + dy * dy + dz * dz < 0.25) {  // 0.5^2 = 0.25
                      valid = false;
                      break;
                  }
@@ -123,20 +142,21 @@
          V[i] = ((double)rand() / RAND_MAX) - 0.5;
          W[i] = ((double)rand() / RAND_MAX) - 0.5;
      }
-     int numType1 = static_cast<int>(ceil(numParticles * (percent_type1 / 100.0)));
-     vector<double> particleTypes(numParticles, 0.0);
+ 
+     int numType1 = (int)ceil(numParticles * (percent_type1 / 100.0));
+     for (int i = 0; i < numParticles; i++) {
+         type[i] = 0;
+     }
      for (int i = 0; i < numType1; i++) {
-         particleTypes[i] = 1;
+         type[i] = 1;
      }
      for (int i = 0; i < numParticles; i++) {
          int j = rand() % numParticles;
-         int temp = particleTypes[i];
-         particleTypes[i] = particleTypes[j];
-         particleTypes[j] = temp;
+         double temp = type[i];
+         type[i] = type[j];
+         type[j] = temp;
      }
-     type = particleTypes;
  }
- 
  
  
  /**
@@ -220,13 +240,13 @@
  
  
  /**
-  * @brief Updates particle position and velocity variables for each time step.
+  * @brief CUDA kernel to update variables for particles.
   *
-  * This function updates the positions, velocities, energies, and forces on particles based on
+  * This kernel updates the positions, velocities, energies, and forces on particles based on
   * Lennard-Jones potential equations. Boundary conditions are applied
   * to keep particles within the simulation box. If a temperature is set by the user it is enforced at this point.
   * 
-  * It uses openMP shared-memory parallelisation to improve the runtime of complex particle simulations.
+  * It uses CUDA GPU parallelisation to improve the runtime of complex particle simulations.
   *
   * @param min_dist Minimum distance between any two particles
   * @param dt Time step
@@ -234,89 +254,62 @@
   * @param Lx Length of the container in the x direction
   * @param Ly Length of the container in the y direction
   * @param Lz Length of the container in the z direction
-  * @param type Type of each particle (0 or 1 ie. light or heavy)
+  * @param type Pointer to an array of the type of each particle (0 or 1 ie. light or heavy)
   * @param temperature Chosen simulation temperature
   * @param tempProvided Boolean indicating if the temperature is provided
   * @param kb Boltzmann constant
   * @param epsilon Lennard-Jones Potential epsilon values
   * @param sigma Lennard-Jones Potential sigma values
-  * @param X x coordinate of each particle
-  * @param Y y coordinate of each particle
-  * @param Z z coordinate of each particle
-  * @param U x velocity of each particle
-  * @param V y velocity of each particle
-  * @param W z velocity of each particle
-  * @param E Kinetic Energy of each particle
-  * @param speed Speed of each particleß
-  * @param xij Difference in x position between two particles 
-  * @param yij Difference in y position between two particles
-  * @param zij Difference in z position between two particles 
-  * @param rij Distance between particles squared (!)
-  * @param Fx x direction force component of each particle
-  * @param Fy y direction force component of each particle
-  * @param Fz z direction force component of each particle
+  * @param X Pointer to x coordinates of each particle
+  * @param Y Pointer to y coordinates of each particle
+  * @param Z Pointer to z coordinates of each particle
+  * @param U Pointer to x velocities of each particle
+  * @param V Pointer to y velocities of each particle
+  * @param W Pointer to z velocities of each particle
+  * @param E Pointer to the pointer that will hold the kinetic energies of each particle
+  * @param speed Pointer to the speeds
+  * @param Fx Pointer to the x direction force component of each particle
+  * @param Fy Pointer to the y direction force component of each particle
+  * @param Fz Pointer to the z direction force component of each particle
   */
- void updateVars(double min_dist, int numParticles, double dt, double Lx, double Ly, double Lz,
-     vector<double>& type, double temperature, bool tempProvided, double kb,
+ __global__   //CUDA kernal updateVars
+ void updateVars(int numParticles, double dt, double Lx, double Ly, double Lz,
+     double* type, double temperature, bool tempProvided, double kb,
      const int epsilon[2][2], const int sigma[2][2],
-     vector<double>& X, vector<double>& Y, vector<double>& Z,
-     vector<double>& U, vector<double>& V, vector<double>& W,
-     vector<double>& E, vector<double>& speed,
-     vector<double>& Fx, vector<double>& Fy, vector<double>& Fz)
+     double* X, double* Y, double* Z,
+     double* U, double* V, double* W,
+     double* E, double* speed, double* Fx, double* Fy, double* Fz)
  {
-     int nthreads = omp_get_max_threads();   //get number of threads as specified by export OMP_NUM_THREADS=... or from .slr file
-     vector<vector<double>> Fx_local(nthreads, vector<double>(numParticles, 0.0));   //local versions of the net forces avoid a race condition
-     vector<vector<double>> Fy_local(nthreads, vector<double>(numParticles, 0.0));
-     vector<vector<double>> Fz_local(nthreads, vector<double>(numParticles, 0.0));
  
-     #pragma omp parallel //start parallel region
-     {
-         int tid = omp_get_thread_num(); //get local thread id
-         #pragma omp for schedule(guided) //set number of indices given per thread with guided. Better performance compared to static and dynamic.
-                                         // guided starts with a large chunk size and reduces as loop gets closer to completion. Less overhead than fully
-                                         // dynamic scheduling.
-         for (int i = 0; i < numParticles; i++) {
-             for (int j = i + 1; j < numParticles; j++) {
-                 double xij = X[i] - X[j];
-                 double yij = Y[i] - Y[j];
-                 double zij = Z[i] - Z[j];
-                 double rij = xij*xij + yij*yij + zij*zij; // squared distance
- 
-                 int t1 = type[i];
-                 int t2 = type[j];
-                 int e = epsilon[t1][t2];
-                 int s = sigma[t1][t2];
- 
-                 double inv_r4 = 1.0 / (rij * rij * rij * rij);
-                 double sigma6 = s6_table[s] * inv_r4;
-                 double sigma12 = sigma6 * sigma6 * rij;
-                 double coeff = -24.0 * e * (2.0 * sigma12 - sigma6);
- 
-                 Fx_local[tid][i] -= xij * coeff; // Fx_local stores net force in a position where row and column are local thread id and particle 'id' or 'number' 
-                 Fy_local[tid][i] -= yij * coeff;
-                 Fz_local[tid][i] -= zij * coeff;
-                 Fx_local[tid][j] += xij * coeff;
-                 Fy_local[tid][j] += yij * coeff;
-                 Fz_local[tid][j] += zij * coeff;
-             }
-         }
-     } 
- 
-     //static scheduling is fine, uniform workload
-     #pragma omp parallel for schedule(static)
+     
+     //global thread index = thread id + num threads per block + current block index
+     int tid = threadIdx.x + blockDim.x * blockIdx.x; 
+     if (tid >= numParticles) return; // exit condition if thread index pointing to a particle that doesn't exist
      for (int i = 0; i < numParticles; i++) {
-         double sumFx = 0.0, sumFy = 0.0, sumFz = 0.0;
-         for (int t = 0; t < nthreads; t++) {
-             sumFx += Fx_local[t][i]; // total the local contributions
-             sumFy += Fy_local[t][i];
-             sumFz += Fz_local[t][i];
+         for (int j = i + 1; j < numParticles; j++) {
+             double xij = X[i] - X[j];
+             double yij = Y[i] - Y[j];
+             double zij = Z[i] - Z[j];
+             double rij = xij*xij + yij*yij + zij*zij; // r squared
+             int t1 = type[i];
+             int t2 = type[j];
+             int e = epsilon[t1][t2];  // finds e and s of the particular particle pair
+             int s = sigma[t1][t2];
+ 
+             double inv_r4 = 1.0 / (rij * rij * rij * rij); //calculation split up and not including pow for optimisation reasons
+             double sigma6 = s6_table[s] * inv_r4;
+             double sigma12 = sigma6 * sigma6 * rij;
+             double coeff = -24.0 * e * (2.0 * sigma12 - sigma6);
+ 
+             Fx[i] -= xij * coeff;       //calculate the net forces
+             Fy[i] -= yij * coeff;
+             Fz[i] -= zij * coeff;
+             Fx[j] += xij * coeff;   // the opposite sign is applied to the j indices as this represents the missing lower triangle of the matrix
+             Fy[j] += yij * coeff;
+             Fz[j] += zij * coeff;
          }
-         Fx[i] = sumFx;//update the global net force variables
-         Fy[i] = sumFy;
-         Fz[i] = sumFz;
      }
- 
- 
+     
      for (int i = 0; i < numParticles; i++) {
          int m = (type[i] == 0) ? 1 : 10; // if true pick 1 else 10
          U[i] += dt * Fx[i] / m; //update velocities
@@ -324,17 +317,15 @@
          W[i] += dt * Fz[i] / m;
      }
  
-     // calculate kinetic energy
      double E_total = 0.0;
-     for (int i = 0; i < numParticles; i++) {
+     for (int i = 0; i < numParticles; i++) {        // calculate kinetic energy
          int m = (type[i] == 0) ? 1 : 10;
          double speed2 = U[i]*U[i] + V[i]*V[i] + W[i]*W[i];
          E[i] = 0.5 * m * speed2;
          E_total += E[i];
      }
  
-     //update velocity if temperature is defined by the user
-     if (tempProvided) {
+     if (tempProvided) {                                                      //update velocity if temperature is defined by the user
          double currentTemp = (2.0 / (3.0 * numParticles * kb)) * E_total;
          double lambda = sqrt(temperature / currentTemp);
          for (int i = 0; i < numParticles; i++) {
@@ -343,38 +334,38 @@
              W[i] *= lambda;
          }
      }
- 
-    
-     for (int i = 0; i < numParticles; i++) {
-         X[i] += dt * U[i];    // update position
+     
+     for (int i = 0; i < numParticles; i++) { //apply boundary conditions
+         X[i] += dt * U[i];
          Y[i] += dt * V[i];
          Z[i] += dt * W[i];
          if (X[i] > Lx) {
-             X[i] = 2 * Lx - X[i];  // Apply Boundary conditions
-             U[i] = -abs(U[i]);
+             X[i] = 2*Lx - X[i];
+             U[i] = -fabs(U[i]);
          }
          if (Y[i] > Ly) {
-             Y[i] = 2 * Ly - Y[i];
-             V[i] = -abs(V[i]);
+             Y[i] = 2*Ly - Y[i];
+             V[i] = -fabs(V[i]);
          }
          if (Z[i] > Lz) {
-             Z[i] = 2 * Lz - Z[i];
-             W[i] = -abs(W[i]);
+             Z[i] = 2*Lz - Z[i];
+             W[i] = -fabs(W[i]);
          }
          if (X[i] < 0) {
              X[i] = -X[i];
-             U[i] = abs(U[i]);
+             U[i] = fabs(U[i]);
          }
          if (Y[i] < 0) {
              Y[i] = -Y[i];
-             V[i] = abs(V[i]);
+             V[i] = fabs(V[i]);
          }
          if (Z[i] < 0) {
              Z[i] = -Z[i];
-             W[i] = abs(W[i]);
+             W[i] = fabs(W[i]);
          }
      }
  }
+ 
  
  
  /**
@@ -385,26 +376,24 @@
   * positions.txt containes the timestamp and x and y position of each particle. eg Time X1 Y1 X2 Y2 X3 Y3...
   * 
   *
-  * @param t Current time step index
+  * @param t Current time step index       
   * @param numParticles Number of particles
-  * @param timestamps timestamps from 0 to the time set by the user in increments dt set by the user
-  * @param X x coordinate of each particle
-  * @param Y y coordinate of each particle
-  * @param Z z coordinate of each particle
-  * @param U x velocity of each particle
-  * @param V y velocity of each particle
-  * @param W z velocity of each particle
-  * @param E Kinetic Energy of each particle
+  * @param X Pointer to the pointer for x coordinates
+  * @param Y Pointer to the pointer for y coordinate
+  * @param Z Pointer to the pointer for z coordinates
+  * @param U Pointer to the pointer for x velocities
+  * @param V Pointer to the pointer for y velocities
+  * @param W Pointer to the pointer for z velocities
+  * @param E Pointer to the pointer that will hold the kinetic energy
   */
  void writeToFiles(int t, int numParticles, const vector<double>& timestamps,
-     const vector<double>& X, const vector<double>& Y,
-     const vector<double>& Z, const vector<double>& U,
-     const vector<double>& V, const vector<double>& W,
-     const vector<double>& E)
+                   const double* X, const double* Y, const double* Z,
+                   const double* U, const double* V, const double* W,
+                   const double* E)
  {
-   
+ 
      {
-         ofstream energyfile("energy.txt", ios::app);        // write time stamp and KE to kinetic energy file
+         ofstream energyfile("energy.txt", ios::app);  // write time stamp and KE to kinetic energy file
          energyfile << "runtime";
          for (int i = 0; i < numParticles; i++) {
              energyfile << " E" << i;
@@ -418,7 +407,7 @@
      }
  
      {
-         ofstream posfile("positions.txt", ios::app);        // write time stamp, x and y position to position file
+         ofstream posfile("positions.txt", ios::app);   // write time stamp, x and y position to position file
          posfile << "runtime";
          for (int i = 0; i < numParticles; i++) {
              posfile << " x" << i << " y" << i;
@@ -433,7 +422,6 @@
      }
  }
  
- 
  /**
   * @brief Main simulation program.
   *
@@ -444,7 +432,7 @@
   * @param argv Arguments provided stored as strings
   * @return Exit value
   */
- int main(int argc, char *argv[]) {
+ int main(int argc, char *argv[]) { // read cmd args w main params.
      auto start = chrono::high_resolution_clock::now();              // start runtime clock
      int i = 0;
      double Lx = 20;         // initialise default params
@@ -456,7 +444,7 @@
      bool nProvided = false;
      bool icRandomChosen = false;
      bool tempProvided = false;
- 
+     
      ifstream file1("output.txt"); // close files in case make clean isn't run. Function write to file appends so it's worth doing just in case.
      if (file1) {
          file1.close();
@@ -472,40 +460,39 @@
          file3.close();
          remove("positions.txt");
      }
+     double *X, *Y, *Z, *U, *V, *W, *E, *speed, *Fx, *Fy, *Fz;
+     double xij, yij, zij, rij;
  
-     vector<double> X, Y, Z, U, V, W, E, speed, Fx, Fy, Fz;
-     double xij, yij, zij, rij, dPhi_dx, dPhi_dy, dPhi_dz;
      map<string, map<string, vector<double>>> testCaseDict = getTestCases();
+     
      double runtime, percent_type1, temperature;
      double kb = 0.8314459920816467;
      int numParticles;
-     vector<double> x, y, z, u, v, w, type;
+     vector<double> x, y, z, u, v, w;
+     double* type;  // This will be allocated in variableInitialisation
  
-     while (i < argc) {
-         string arg = argv[i];
-         if (arg == "--Lx") {
-             Lx = stod(argv[++i]);
-         } else if (arg == "--Ly") {
-             Ly = stod(argv[++i]);
-         } else if (arg == "--Lz") {
-             Lz = stod(argv[++i]);
-         } else if (arg == "--T") {
-             runtime = stod(argv[++i]);
+     while (i < argc) {                              // save args given by user into relevant variables
+         if (string(argv[i]) == "--Lx") {
+             Lx = stod(argv[i + 1]);
+         } else if (string(argv[i]) == "--Ly") {
+             Ly = stod(argv[i + 1]);
+         } else if (string(argv[i]) == "--Lz") {
+             Lz = stod(argv[i + 1]);
+         } else if (string(argv[i]) == "--T") {
+             runtime = stod(argv[i + 1]);
              timeProvided = true;
-         } else if (arg == "--N") {
-             numParticles = stoi(argv[++i]);
+         } else if (string(argv[i]) == "--N") {
+             numParticles = stoi(argv[i + 1]);
              nProvided = true;
-         } else if (arg == "--temp") {
-             temperature = stod(argv[++i]);
+         } else if (string(argv[i]) == "--temp") {
+             temperature = stod(argv[i + 1]);
              tempProvided = true;
-         } else if (arg == "--percent-type1") {
-             percent_type1 = stod(argv[++i]);
-         } else if (arg == "--dt") {
-             dt = stod(argv[++i]);
-         } else if (arg == "--ic-random") {
+         } else if (string(argv[i]) == "--percent-type1") {
+             percent_type1 = stod(argv[i + 1]);
+         } else if (string(argv[i]) == "--ic-random") {
              icRandomChosen = true;
-         } else if (testCaseDict.find(arg) != testCaseDict.end()) {
-             string key = arg;
+         } else if (testCaseDict.find(string(argv[i])) != testCaseDict.end()) {
+             string key(argv[i]);
              runtime = testCaseDict[key]["runtime"][0];
              numParticles = testCaseDict[key]["numParticles"][0];
              x = testCaseDict[key]["x"];
@@ -514,9 +501,8 @@
              u = testCaseDict[key]["u"];
              v = testCaseDict[key]["v"];
              w = testCaseDict[key]["w"];
-             type = testCaseDict[key]["type"];
              testCase = true;
-         } else if (arg == "--help") {
+         } else if (string(argv[i]) == "--help") {
              cout << "Allowed options:\n"
                   << "--help                Print available options.\n"
                   << "--Lx arg (=20)        x length (Angstroms)\n"
@@ -537,27 +523,28 @@
          }
          i++;
      }
- 
-     if ((testCase == true) || (icRandomChosen && nProvided && timeProvided)) { // check if args are valid
+     
+     if ((testCase == true) || (icRandomChosen && nProvided && timeProvided)) {  // check if args are valid
          cout << "Command Line input well-formatted, carrying on..." << endl;
      } else {
          cout << "Command line input formatted incorrectly, exiting program." << endl;
          exit(1);
      }
- 
+     
      int totalSteps = (runtime / dt) + 1;
      vector<double> timestamps(totalSteps);
-     for (int i = 0; i < totalSteps; i++) {  // vector going from 0 to time T in increments dt
-         timestamps[i] = i * dt;
+     for (int i = 0; i < totalSteps; i++) {
+         timestamps[i] = i * dt;  // vector going from 0 to time T in increments dt
      }
  
-     variableInitialisation(totalSteps, numParticles, X, Y, Z, U, V, W, E, speed, Fx, Fy, Fz);     //initialise variables - given a separate function for main function readability
+     // allocate vars in managed memory
+     variableInitialisation(totalSteps, numParticles, &X, &Y, &Z, &U, &V, &W, &E, &speed, &Fx, &Fy, &Fz, &type);
  
      if (icRandomChosen) {
          icRandom(numParticles, Lx, Ly, Lz, percent_type1, X, Y, Z, U, V, W, type);
-     } else {
+     } else if (testCase == true) {
          for (int i = 0; i < numParticles; i++) {
-             X[i] = x[i];// the lower case x,y,z etc are how the vars are stored in testCaseDict
+             X[i] = x[i];
              Y[i] = y[i];
              Z[i] = z[i];
              U[i] = u[i];
@@ -565,34 +552,48 @@
              W[i] = w[i];
          }
      }
- 
-     int epsilon[2][2] = { {3,15}, {15,60} };//initialise epsilon and sigma as stated in brief
+     
+     
+     int epsilon[2][2] = { {3,15}, {15,60} }; //initialise epsilon and sigma as stated in brief
      int sigma[2][2] = { {1,2}, {2,3} };
  
-     double min_dist = ((X[1] - X[0]) * (X[1] - X[0]) +     // calculate an initial minimum distance to compare against using first 2 particles at t=0
-                        (Y[1] - Y[0]) * (Y[1] - Y[0]) +
-                        (Z[1] - Z[0]) * (Z[1] - Z[0]));
+     constexpr int n = 2048; //compile time constant. n value found to be most optimal through trial and error
+     int threads = min(256, n);
+     int blocks = max(n/256, 1);
  
-    
      for (int t = 0; t < totalSteps; t++) {
          for (int i = 0; i < numParticles; i++) {
              Fx[i] = 0.0;
              Fy[i] = 0.0;
-             Fz[i] = 0.0;
+             Fz[i] = 0.0;           
          }
-         updateVars(min_dist, numParticles, dt, Lx, Ly, Lz, type, temperature,
-                    tempProvided, kb, epsilon, sigma, X, Y, Z, U, V, W, E, speed,
-                    Fx, Fy, Fz);
-         if (t % 100 == 0) { // save to file every 100 timestamps to balance performance and fineness of file data
-             writeToFiles(t, numParticles, timestamps, X, Y, Z, U, V, W, E);
-         }
-     }
-     cout << "minimum distance: " << sqrt(min_dist) << endl;
  
+         updateVars<<<blocks, threads>>>(numParticles, dt, Lx, Ly, Lz, type, temperature, tempProvided, kb,
+             epsilon, sigma, X, Y, Z, U, V, W, E, speed, Fx, Fy, Fz);  //run CUDA kernal updateVars 
+             
+         if (t % 100 == 0) {
+             writeToFiles(t, numParticles, timestamps,X,Y,Z,U,V, W,E);
+         }
+         cudaDeviceSynchronize(); //wait for GPU ops to complete before next time step iteration
+     }
+ 
+     cudaFree(X); // release managed memory
+     cudaFree(Y);
+     cudaFree(Z);
+     cudaFree(U);
+     cudaFree(V);
+     cudaFree(W);
+     cudaFree(E);
+     cudaFree(speed);
+     cudaFree(Fx);
+     cudaFree(Fy);
+     cudaFree(Fz);
+     cudaFree(type);
+     
      auto end = chrono::high_resolution_clock::now();
      chrono::duration<double> duration = end - start;
      cout << "Runtime: " << duration.count() << " seconds" << endl;
- 
+     
      return 0;
  }
  
