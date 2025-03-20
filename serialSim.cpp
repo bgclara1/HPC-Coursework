@@ -1,16 +1,49 @@
-#include <iostream>
-#include <map>
-#include <string>
-#include <vector>
-#include <cmath>
-#include <cstdlib>
-#include <fstream>
-#include <iomanip>
-#include <ctime>
-#include <chrono>
+/**
+ * @file serialSim.cpp
+ * @brief A serial solver for particle interaction in an enclosed space modelled using Lennard-Jones potential.
+ *
+ * This program simulates the interaction of particles within an enclosed space. 
+ * It uses Lennard-Jones potential to model the interactions. 
+ * This programme uses a serial algorithm to solve the problem. 
+ * The programme allows the user to specify the dimensions of the box, the number of particles, the ratio of heavy to light particles,
+ * the temperature, the duration of the simulation and the timestep. 
+ * The user may also chose to run 6 example simulations.
+ */
+
+ #include <iostream>
+ #include <map>
+ #include <string>
+ #include <vector>
+ #include <cmath>
+ #include <cstdlib>
+ #include <fstream>
+ #include <iomanip>
+ #include <ctime>
+ #include <chrono>
 
 using namespace std;
 
+/**
+ * @brief Initializes particle variables.
+ *
+ * This function initializes the variables used for particle properties by setting them
+ * to totalSteps * numParticles with initial values of 0.0. The variables that get updated (X, Y etc.)
+ * are stored as vector doubles such that they contain the information of each particle in the system.
+ *
+ * @param totalSteps Total number of steps in the simulation
+ * @param numParticles Number of particles 
+ * @param X x coordinate of each particle
+ * @param Y y coordinate of each particle
+ * @param Z z coordinate of each particle
+ * @param U x velocity of each particle
+ * @param V y velocity of each particle
+ * @param W z velocity of each particle
+ * @param E Kinetic Energy of each particle
+ * @param speed speed of each particle
+ * @param Fx x direction force component of each particle
+ * @param Fy y direction force component of each particle
+ * @param Fz z direction force component of each particle
+ */
 void variableInitialisation(int totalSteps, int numParticles,
     vector<double>& X, vector<double>& Y, vector<double>& Z,
     vector<double>& U, vector<double>& V, vector<double>& W,
@@ -30,6 +63,26 @@ void variableInitialisation(int totalSteps, int numParticles,
     Fz.resize(totalSteps * numParticles, 0.0);
 }
 
+/**
+ * @brief Initializes particles with random positions and velocities for when the user inputs --ic-random as a command line parameter.
+ *
+ * This function assigns random initial positions and velocities to particles. The posititions must be within the default (20) or requested dimensions
+ * of the container. The velocities are generated between -0.5 and 0.5.
+ * Additionally, it randomly assigns particle types according to the default (10%) percentage of heavy particles or the percentage requested by the user.
+ *
+ * @param numParticles Number of particles
+ * @param Lx Length of the container in the x direction
+ * @param Ly Length of the container in the y direction
+ * @param Lz Length of the container in the z direction
+ * @param percent_type1 Percentage of particles of type 1 (heavy)
+ * @param X x coordinate of each particle
+ * @param Y y coordinate of each particle
+ * @param Z z coordinate of each particle
+ * @param U x velocity of each particle
+ * @param V y velocity of each particle
+ * @param W z velocity of each particle
+ * @param type type of each particle (0 or 1 ie. light or heavy)
+ */
 void icRandom(int numParticles, double Lx, double Ly, double Lz, double percent_type1,
     vector<double>& X, vector<double>& Y, vector<double>& Z,
     vector<double>& U, vector<double>& V, vector<double>& W,
@@ -77,6 +130,13 @@ void icRandom(int numParticles, double Lx, double Ly, double Lz, double percent_
     type = particleTypes;
 }
 
+/**
+ * @brief Fetches predefined test cases.
+ *
+ * The brief specifies six ecample cases. This function generates a map of the paramaters for each of the examples.
+ *
+ * @return A map where keys are test case names (eg. --ic-one-vel) and their values are maps containing their respective simulation parameters.
+ */
 map<string, map<string, vector<double>>> getTestCases() {
     map<string, map<string, vector<double>>> testCaseDict;
     testCaseDict["--ic-one"] = {
@@ -148,6 +208,42 @@ map<string, map<string, vector<double>>> getTestCases() {
     return testCaseDict;
 }
 
+
+/**
+ * @brief Updates particle position and velocity variables for each time step.
+ *
+ * This function updates the positions, velocities, energies, and forces on particles based on
+ * Lennard-Jones potential equations. Boundary conditions are applied
+ * to keep particles within the simulation box. If a temperature is set by the user it is enforced at this point.
+ *
+ * @param min_dist Minimum distance between any two particles
+ * @param dt Time step
+ * @param numParticles Number of particles
+ * @param Lx Length of the container in the x direction
+ * @param Ly Length of the container in the y direction
+ * @param Lz Length of the container in the z direction
+ * @param type Type of each particle (0 or 1 ie. light or heavy)
+ * @param temperature Chosen simulation temperature
+ * @param tempProvided Boolean indicating if the temperature is provided
+ * @param kb Boltzmann constant
+ * @param epsilon Lennard-Jones Potential epsilon values
+ * @param sigma Lennard-Jones Potential sigma values
+ * @param X x coordinate of each particle
+ * @param Y y coordinate of each particle
+ * @param Z z coordinate of each particle
+ * @param U x velocity of each particle
+ * @param V y velocity of each particle
+ * @param W z velocity of each particle
+ * @param E Kinetic Energy of each particle
+ * @param speed Speed of each particleß
+ * @param xij Difference in x position between two particles 
+ * @param yij Difference in y position between two particles
+ * @param zij Difference in z position between two particles 
+ * @param rij Distance between particles squared (!)
+ * @param Fx x direction force component of each particle
+ * @param Fy y direction force component of each particle
+ * @param Fz z direction force component of each particle
+ */
 void updateVars(double min_dist, int numParticles, double dt, double Lx, double Ly, double Lz,
     vector<double>& type, double temperature, bool tempProvided, double kb,
     const int epsilon[2][2], const int sigma[2][2],
@@ -235,57 +331,62 @@ void updateVars(double min_dist, int numParticles, double dt, double Lx, double 
     }
 }
 
+/**
+ * @brief Writes simulation data to output files.
+ *
+ * This function writes particle positions, velocities, kinetic energy, and timestamps to the files energy.txt and positions.txt.
+ * energy.txt containes timestamp and kinetic energy of each particle.alignas. eg. Time E1 E2 E3 ... 
+ * positions.txt containes the timestamp and x and y position of each particle. eg Time X1 Y1 X2 Y2 X3 Y3...
+ * 
+ *
+ * @param t Current time step index
+ * @param numParticles Number of particles
+ * @param timestamps timestamps from 0 to the time set by the user in increments dt set by the user
+ * @param X x coordinate of each particle
+ * @param Y y coordinate of each particle
+ * @param Z z coordinate of each particle
+ * @param U x velocity of each particle
+ * @param V y velocity of each particle
+ * @param W z velocity of each particle
+ * @param E Kinetic Energy of each particle
+ */
 void writeToFiles(int t, int numParticles, const vector<double>& timestamps,
     const vector<double>& X, const vector<double>& Y,
     const vector<double>& Z, const vector<double>& U,
     const vector<double>& V, const vector<double>& W,
     const vector<double>& E)
 {
-    // Append to output.txt
-    ofstream outfile("output.txt", ios::app);
-    outfile << "Time step " << t << "\n";
-    for (int i = 0; i < numParticles; i++) {
-        outfile << "Particle " << i << ": x = " << X[i]
-                << " y = " << Y[i]
-                << " z = " << Z[i]
-                << " u = " << U[i]
-                << " v = " << V[i]
-                << " w = " << W[i]
-                << " E = " << E[i] << "\n";
-    }
-    outfile << "\n";
-    outfile.close();
 
-    // Append to energy.txt
-    ofstream energyfile("energy.txt", ios::app);
-    energyfile << "runtime";
-    for (int i = 0; i < numParticles; i++) {
-    energyfile << " E" << i;
+    {
+        ofstream energyfile("energy.txt", ios::app);
+        energyfile << "runtime";
+        for (int i = 0; i < numParticles; i++) {
+            energyfile << " E" << i;
+        }
+        energyfile << "\n";
+        energyfile << timestamps[t];
+        for (int i = 0; i < numParticles; i++) {
+            energyfile << " " << E[i];
+        }
+        energyfile << "\n";
     }
-    energyfile << "\n";
-    energyfile << timestamps[t];
-    for (int i = 0; i < numParticles; i++) {
-    energyfile << " " << E[i];
-    }
-    energyfile << "\n";
-    energyfile.close();
 
-    // Append to positions.txt
-    ofstream posfile("positions.txt", ios::app);
-    posfile << "runtime";
-    for (int i = 0; i < numParticles; i++) {
-    posfile << " x" << i << " y" << i;
-    }
-    posfile << "\n";
-    posfile << defaultfloat << timestamps[t];
-    for (int i = 0; i < numParticles; i++) {
-    posfile << " " << fixed << setprecision(6) << X[i]
-    << " " << fixed << setprecision(6) << Y[i];
-    }
-    posfile << "\n";
-    posfile.close();
+    {
+        ofstream posfile("positions.txt", ios::app);
+        posfile << "runtime";
+        for (int i = 0; i < numParticles; i++) {
+            posfile << " x" << i << " y" << i;
+        }
+        posfile << "\n";
+        posfile << std::defaultfloat << timestamps[t];
+        for (int i = 0; i < numParticles; i++) {
+            posfile << " " << std::fixed << std::setprecision(6) << X[i]
+                    << " " << std::fixed << std::setprecision(6) << Y[i];
+        }
+        posfile << "\n";
     }
     
+}
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -294,6 +395,16 @@ void writeToFiles(int t, int numParticles, const vector<double>& timestamps,
 //
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
+/**
+ * @brief Main simulation program.
+ *
+ * This function reads command line arguments, initializes the variables, runs the simulation for each timestep,
+ * and writes to output files.
+ *
+ * @param argc Number of arguments provided
+ * @param argv Arguments provided stored as strings
+ * @return Exit value
+ */
 int main(int argc, char *argv[]) { // read cmd args w main params.
     auto start = chrono::high_resolution_clock::now();
     int i = 0;
