@@ -366,7 +366,7 @@ void writeToFiles(int t, int numParticles, const vector<double>& timestamps,
         ofstream energyfile("energy.txt", ios::app);        // write time stamp and KE to kinetic energy file
         energyfile << "runtime";
         for (int i = 0; i < numParticles; i++) {
-            energyfile << " E" << i;
+            energyfile << " E" << fixed << setprecision(15)<< i;
         }
         energyfile << "\n";
         energyfile << timestamps[t];
@@ -385,8 +385,8 @@ void writeToFiles(int t, int numParticles, const vector<double>& timestamps,
         posfile << "\n";
         posfile << std::defaultfloat << timestamps[t];
         for (int i = 0; i < numParticles; i++) {
-            posfile << " " << std::fixed << std::setprecision(6) << X[i]
-                    << " " << std::fixed << std::setprecision(6) << Y[i];
+            posfile << " " << std::fixed << std::setprecision(10) << X[i]
+                    << " " << std::fixed << std::setprecision(10) << Y[i];
         }
         posfile << "\n";
     }

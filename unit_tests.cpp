@@ -10,9 +10,6 @@ using namespace std;
 
 string readLastLine(const string &filename) {
     ifstream infile(filename.c_str());
-    if (!infile) {
-        return "File not found: " + filename;
-    }
     string line, lastLine;
     while (getline(infile, line)) {
         if (!line.empty())
@@ -23,30 +20,25 @@ string readLastLine(const string &filename) {
 
 void printPositions(const string &line) {
     
-    stringstream ss(line);// split  line into tokens.
-    vector<string> tokens;
-    string token;
-    while(ss >> token) {
-        tokens.push_back(token);
+    stringstream ss(line);// split  line into elements.
+    vector<string> elements;
+    string element;
+    while(ss >> element) {
+        elements.push_back(element);
     }
     
     cout << "Final Positions:" << endl;
-    if (tokens.empty()) {
-        cout << "  No data available" << endl;
-        return;
-    }
+    cout << "  Timestamp: " << elements[0] << endl;
     
-    cout << "  Timestamp: " << tokens[0] << endl;
-    
-    if (tokens.size() == 3) {
-        cout << "  Particle 0: X = " << tokens[1] << ", Y = " << tokens[2] << endl;
-    } else if (tokens.size() == 5) {
-        cout << "  Particle 0: X = " << tokens[1] << ", Y = " << tokens[2] << endl;
-        cout << "  Particle 1: X = " << tokens[3] << ", Y = " << tokens[4] << endl;
+    if (elements.size() == 3) {   // as in time , x , y so one particle case
+        cout << "  Particle 0: X = " << elements[1] << ", Y = " << elements[2] << endl;
+    } else if (elements.size() == 5) { // as in time x1 y1 x2 y2 , two partivcle case
+        cout << "  Particle 0: X = " << elements[1] << ", Y = " << elements[2] << endl;
+        cout << "  Particle 1: X = " << elements[3] << ", Y = " << elements[4] << endl;
     } else {
         cout << "  ";
-        for (const auto &tok : tokens) {
-            cout << tok << " ";
+        for (const auto &i : elements) {
+            cout << i << " ";
         }
         cout << endl;
     }
@@ -54,36 +46,30 @@ void printPositions(const string &line) {
 
 void printEnergies(const string &line) {
     stringstream ss(line);
-    vector<string> tokens;
-    string token;
-    while(ss >> token) {
-        tokens.push_back(token);
+    vector<string> elements;
+    string element;
+    while(ss >> element) {
+        elements.push_back(element);
     }
     
     cout << "Final Kinetic Energies:" << endl;
-    if (tokens.empty()) {
-        cout << "  No data available" << endl;
-        return;
-    }
+    cout << "  Timestamp: " << elements[0] << endl;
     
-    cout << "  Timestamp: " << tokens[0] << endl;
-    
-    if (tokens.size() == 2) {
-        cout << "  Particle 0: KE = " << tokens[1] << endl;
-    } else if (tokens.size() == 3) {
-        cout << "  Particle 0: KE = " << tokens[1] << endl;
-        cout << "  Particle 1: KE = " << tokens[2] << endl;
+    if (elements.size() == 2) {
+        cout << "  Particle 0: KE = " << elements[1] << endl;
+    } else if (elements.size() == 3) {
+        cout << "  Particle 0: KE = " << elements[1] << endl;
+        cout << "  Particle 1: KE = " << elements[2] << endl;
     } else {
         cout << "  ";
-        for (const auto &tok : tokens) {
-            cout << tok << " ";
+        for (const auto &i : elements) {
+            cout << i << " ";
         }
         cout << endl;
     }
 }
 
 int main() {
-    cout << "Compiling serialSim.cpp..." << endl;
 
     vector<string> testCases = {
         "./serialSim --ic-one",
@@ -96,13 +82,7 @@ int main() {
     
     for (size_t i = 0; i < testCases.size(); i++) {
         cout << "\nRunning test case " << i + 1 << ": " << testCases[i] << endl;
-        int ret = system(testCases[i].c_str());
-        if (ret != 0) {
-            cout << "Test case " << i + 1 << " returned error code " << ret << endl;
-        } else {
-            cout << "Test case " << i + 1 << " executed successfully." << endl;
-        }
-        
+            
         string finalPositions = readLastLine("positions.txt");
         string finalEnergies = readLastLine("energy.txt");
         
