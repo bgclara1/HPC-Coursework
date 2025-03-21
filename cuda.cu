@@ -335,37 +335,36 @@
          }
      }
      
-     for (int i = 0; i < numParticles; i++) { //apply boundary conditions
+     for (int i = 0; i < numParticles; i++) { 
          X[i] += dt * U[i];
          Y[i] += dt * V[i];
          Z[i] += dt * W[i];
          if (X[i] > Lx) {
-             X[i] = 2*Lx - X[i];
-             U[i] = -fabs(U[i]);
-         }
-         if (Y[i] > Ly) {
-             Y[i] = 2*Ly - Y[i];
-             V[i] = -fabs(V[i]);
-         }
-         if (Z[i] > Lz) {
-             Z[i] = 2*Lz - Z[i];
-             W[i] = -fabs(W[i]);
-         }
-         if (X[i] < 0) {
-             X[i] = -X[i];
-             U[i] = fabs(U[i]);
-         }
-         if (Y[i] < 0) {
-             Y[i] = -Y[i];
-             V[i] = fabs(V[i]);
-         }
-         if (Z[i] < 0) {
-             Z[i] = -Z[i];
-             W[i] = fabs(W[i]);
+            X[i] = 2 * Lx - X[i];  // Apply Boundary conditions
+            U[i] = -abs(U[i]);
+        }
+        if (Y[i] > Ly) {
+            Y[i] = 2 * Ly - Y[i];
+            V[i] = -abs(V[i]);
+        }
+        if (Z[i] > Lz) {
+            Z[i] = 2 * Lz - Z[i];
+            W[i] = -abs(W[i]);
+        }
+        if (X[i] < 0) {
+            X[i] = -X[i];
+            U[i] = abs(U[i]);
+        }
+        if (Y[i] < 0) {
+            Y[i] = -Y[i];
+            V[i] = abs(V[i]);
+        }
+        if (Z[i] < 0) {
+            Z[i] = -Z[i];
+            W[i] = abs(W[i]);
          }
      }
  }
- 
  
  
  /**
